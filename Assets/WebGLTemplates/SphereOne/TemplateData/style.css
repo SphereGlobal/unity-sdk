@@ -1,0 +1,68 @@
+html,body{ margin:0; padding:0; height:100%; width:100%; }
+#unity-container { position: absolute }
+#unity-container.unity-desktop { left: 50%; top: 50%; transform: translate(-50%, -50%) }
+#unity-container.unity-mobile { position: fixed; width: 100%; height: 100% }
+#unity-canvas { background: {{{ BACKGROUND_COLOR }}} }
+.unity-mobile #unity-canvas { width: 100%; height: 100% }
+#unity-loading-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none }
+#unity-logo { width: 154px; height: 130px; background: url('unity-logo-{{{ SPLASH_SCREEN_STYLE.toLowerCase() }}}.png') no-repeat center }
+#unity-progress-bar-empty { width: 141px; height: 18px; margin-top: 10px; margin-left: 6.5px; background: url('progress-bar-empty-{{{ SPLASH_SCREEN_STYLE.toLowerCase() }}}.png') no-repeat center }
+#unity-progress-bar-full { width: 0%; height: 18px; margin-top: 10px; background: url('progress-bar-full-{{{ SPLASH_SCREEN_STYLE.toLowerCase() }}}.png') no-repeat center }
+#unity-footer { position: relative }
+.unity-mobile #unity-footer { display: none }
+#unity-webgl-logo { float:left; width: 204px; height: 38px; background: url('webgl-logo.png') no-repeat center }
+#unity-build-title { float: right; margin-right: 10px; line-height: 38px; font-family: arial; font-size: 18px }
+#unity-fullscreen-button { cursor:pointer; float: right; width: 38px; height: 38px; background: url('fullscreen-button.png') no-repeat center }
+#unity-warning { position: absolute; left: 50%; top: 5%; transform: translate(-50%); background: white; padding: 10px; display: none }
+
+#slideout {
+  background: #000000;
+  color: #000000;
+  position: fixed;
+  top: 0;
+  right: -520px;
+  width: 500px;
+  height: 100%;
+  -webkit-transition-duration: 0.3s;
+  -moz-transition-duration: 0.3s;
+  -o-transition-duration: 0.3s;
+  transition-duration: 0.3s;
+}
+
+#slideout.open {
+  right: 0;
+}
+
+#app-container {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.blur-overlay {
+  animation: bg-blur .4s 1 forwards ease;
+}
+
+.darken-overlay {
+  animation: bg-darken .4s 1 forwards ease;
+}
+
+.no-click {
+   pointer-events: none;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  border-width: 0px;
+}
+
+@keyframes bg-blur {
+   0% { filter: blur(0); }
+   100% { filter: blur(4px); }
+}
+
+@keyframes bg-darken {
+  0% { filter: brightness(100%); }
+  100% { filter: brightness(30%); }
+}

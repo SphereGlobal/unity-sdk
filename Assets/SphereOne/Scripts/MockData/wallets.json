@@ -1,0 +1,50 @@
+{
+  "data": [
+    {
+      "address": "0x05EBEACD2296b979E72966420914E3409079355e",
+      "chains": ["ETHEREUM", "GNOSIS", "IMMUTABLE", "FANTOM", "EOSEVM"],
+      "isImported": false,
+      "publicKey": "0x05EBEACD2296b979E72966420914E3409079355e",
+      "type": "EOA",
+      "uid": "0x05EBEACD2296b979E72966420914E3409079355e",
+      "label": ""
+    },
+    {
+      "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+      "chains": [
+        "ETHEREUM",
+        "POLYGON",
+        "AVALANCHE",
+        "OPTIMISM",
+        "GNOSIS",
+        "ARBITRUM",
+        "BINANCE",
+        "FANTOM"
+      ],
+      "isImported": true,
+      "publicKey": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+      "type": "EOA",
+      "uid": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+      "label": ""
+    },
+    {
+      "address": "0x41cC1be3efa8304dD0c74d156e95E11a9eEF836f",
+      "chains": ["POLYGON", "AVALANCHE", "BINANCE", "ARBITRUM", "OPTIMISM"],
+      "isImported": false,
+      "publicKey": "0x41cC1be3efa8304dD0c74d156e95E11a9eEF836f",
+      "type": "SmartWallet",
+      "uid": "0x41cC1be3efa8304dD0c74d156e95E11a9eEF836f",
+      "label": ""
+    },
+    {
+      "address": "AsBZ4wwTGXejbZhsBLXefgfyDpJQmdtt4dK1Xs6Myk3L",
+      "chains": ["SOLANA"],
+      "isImported": false,
+      "publicKey": "AsBZ4wwTGXejbZhsBLXefgfyDpJQmdtt4dK1Xs6Myk3L",
+      "type": "EOA",
+      "uid": "AsBZ4wwTGXejbZhsBLXefgfyDpJQmdtt4dK1Xs6Myk3L",
+      "label": ""
+    }
+  ],
+  "error": null
+}

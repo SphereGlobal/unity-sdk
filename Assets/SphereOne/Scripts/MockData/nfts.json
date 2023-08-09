@@ -1,0 +1,29 @@
+{
+  "error": null,
+  "data": [
+    {
+      "img": "https://usdclive.org/usdc.png",
+      "name": "$1500 USDC",
+      "address": "0xAbD94eb1D695760aDbc3101d15da96418F1f8Fb6",
+      "tokenType": "ERC721"
+    },
+    {
+      "img": "https://usdtevent.com/usdt.png",
+      "name": "$2000 USDT",
+      "address": "0xc561Cda5aEAdD18392D4B10Df694d112B2f559E4",
+      "tokenType": "ERC721"
+    },
+    {
+      "img": "https://ethercbase.com/image.png",
+      "name": "$ETH NFT EVENT",
+      "address": "0x778e66407B5E613eb9bf5cad52c88f1094cFCB84",
+      "tokenType": "ERC721"
+    },
+    {
+      "img": "https://bafybeihxfge3p26j5zddpu4hafvcbippcqt6eed7anbjc3xy7tvmqx7hsy.ipfs.w3s.link/398.png",
+      "name": "Immutable Airdrop #398",
+      "address": "0x44D380E142213b77E586e1709996f5BbA6CE8099",
+      "tokenType": "ERC721"
+    }
+  ]
+}

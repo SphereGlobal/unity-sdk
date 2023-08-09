@@ -1,0 +1,14 @@
+{
+  "data": {
+    "uid": "google-oauth2|106336942023214914849",
+    "signedUp": true,
+    "email": "mock_user@sphereone.xyz",
+    "currencyISO": "USD",
+    "countryFlag": "🇺🇸",
+    "countryCode": "US",
+    "name": "mock_user@sphereone.xyz",
+    "username": "mock_user@sphereone.xyz",
+    "isMerchant": false
+  },
+  "error": null
+}

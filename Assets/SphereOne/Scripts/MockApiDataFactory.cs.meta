@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 256ed14eff1b64240aeff8e15462887e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - CredentialsJsonFile: {fileID: 4900000, guid: 91300be44f4c64cda8007cdf55b5e4f1, type: 3}
+  - UserJsonFile: {fileID: 4900000, guid: 0347993f8806d4234bab901722226442, type: 3}
+  - WalletsJsonFile: {fileID: 4900000, guid: d0156942937bb47d4ba8c08c1c784106, type: 3}
+  - BalancesJsonFile: {fileID: 4900000, guid: 1cf15ca5c7262418e9219dd9c773209b, type: 3}
+  - NftsJsonFile: {fileID: 4900000, guid: ae79d9b3598df4cd795670a957345811, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

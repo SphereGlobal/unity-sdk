@@ -1,0 +1,190 @@
+{
+  "error": null,
+  "data": {
+    "total": "7793036",
+    "balances": [
+      {
+        "address": "0x16fbf98a7ddc3957168ae4670d63582def3d67c7",
+        "amount": "120110461830924",
+        "price": "219287",
+        "chain": "ETHEREUM",
+        "tokenMetadata": {
+          "chain": "ETHEREUM",
+          "address": "0x0000000000000000000000000000000000000000",
+          "logoURI": "https://tokens.1inch.io/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png",
+          "decimals": 18,
+          "name": "Ethereum",
+          "symbol": "ETH"
+        }
+      },
+      {
+        "address": "0x16fbf98a7ddc3957168ae4670d63582def3d67c7",
+        "amount": "988223705304313064",
+        "price": "657238",
+        "chain": "POLYGON",
+        "tokenMetadata": {
+          "chain": "POLYGON",
+          "address": "0x0000000000000000000000000000000000000000",
+          "logoURI": "https://tokens.1inch.io/0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0.png",
+          "decimals": 18,
+          "name": "Matic",
+          "symbol": "MATIC"
+        }
+      },
+      {
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "amount": "27316894744052",
+        "price": "49908",
+        "chain": "OPTIMISM",
+        "tokenMetadata": {
+          "chain": "OPTIMISM",
+          "address": "0x0000000000000000000000000000000000000000",
+          "logoURI": "https://tokens.1inch.io/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png",
+          "decimals": 18,
+          "name": "Ethereum",
+          "symbol": "ETH"
+        }
+      },
+      {
+        "address": "0x16fbf98a7ddc3957168ae4670d63582def3d67c7",
+        "amount": "1024209000000000",
+        "price": "247262",
+        "chain": "BINANCE",
+        "tokenMetadata": {
+          "chain": "BINANCE",
+          "address": "0x0000000000000000000000000000000000000000",
+          "logoURI": "https://tokens.1inch.io/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c_1.png",
+          "decimals": 18,
+          "name": "BNB",
+          "symbol": "BNB"
+        }
+      },
+      {
+        "address": "0x16fbf98a7ddc3957168ae4670d63582def3d67c7",
+        "amount": "66215800000000",
+        "price": "120955",
+        "chain": "ARBITRUM",
+        "tokenMetadata": {
+          "chain": "ARBITRUM",
+          "address": "0x0000000000000000000000000000000000000000",
+          "logoURI": "https://tokens.1inch.io/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c_1.png",
+          "decimals": 18,
+          "name": "Ethereum",
+          "symbol": "ETH"
+        }
+      },
+      {
+        "chain": "ETHEREUM",
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "tokenMetadata": {
+          "symbol": "IMX",
+          "chain": "ETHEREUM",
+          "address": "0xF57e7e7C23978C3cAEC3C3548E3D615c346e79fF",
+          "decimals": 18,
+          "name": "Immutable X",
+          "logoURI": "https://tokens.1inch.io/0xf57e7e7c23978c3caec3c3548e3d615c346e79ff.png"
+        },
+        "amount": "5972090000000000000",
+        "price": "4367574"
+      },
+      {
+        "chain": "POLYGON",
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "tokenMetadata": {
+          "symbol": "IXT",
+          "chain": "POLYGON",
+          "address": "0xE06Bd4F5aAc8D0aA337D13eC88dB6defC6eAEefE",
+          "decimals": 18,
+          "name": "PlanetIX",
+          "logoURI": "https://tokens.1inch.io/0xe06bd4f5aac8d0aa337d13ec88db6defc6eaeefe.png"
+        },
+        "amount": "2061916140165942948",
+        "price": "511965"
+      },
+      {
+        "chain": "POLYGON",
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "tokenMetadata": {
+          "symbol": "USDC",
+          "chain": "POLYGON",
+          "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+          "decimals": 6,
+          "name": "USD Coin (PoS)",
+          "logoURI": "https://tokens.1inch.io/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.png"
+        },
+        "amount": "687727",
+        "price": "687727"
+      },
+      {
+        "chain": "OPTIMISM",
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "tokenMetadata": {
+          "symbol": "USDC",
+          "chain": "OPTIMISM",
+          "address": "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
+          "decimals": 6,
+          "name": "USD Coin",
+          "logoURI": "https://tokens.1inch.io/0x7f5c764cbc14f9669b88837ca1490cca17c31607.png"
+        },
+        "amount": "80000",
+        "price": "80000"
+      },
+      {
+        "chain": "AVALANCHE",
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "tokenMetadata": {
+          "symbol": "USDt",
+          "chain": "AVALANCHE",
+          "address": "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7",
+          "decimals": 6,
+          "name": "TetherToken (USDt)",
+          "logoURI": "https://tokens.1inch.io/0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7.png"
+        },
+        "amount": "100000",
+        "price": "99897"
+      },
+      {
+        "chain": "AVALANCHE",
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "tokenMetadata": {
+          "symbol": "USDC",
+          "chain": "AVALANCHE",
+          "address": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+          "decimals": 6,
+          "name": "USD Coin (USDC)",
+          "logoURI": "https://tokens.1inch.io/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.png"
+        },
+        "amount": "238298",
+        "price": "238298"
+      },
+      {
+        "chain": "ARBITRUM",
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "tokenMetadata": {
+          "symbol": "USDC.e",
+          "chain": "ARBITRUM",
+          "address": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+          "decimals": 6,
+          "name": "Bridged USDC",
+          "logoURI": "https://tokens.1inch.io/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.png"
+        },
+        "amount": "82711",
+        "price": "82711"
+      },
+      {
+        "chain": "ARBITRUM",
+        "address": "0x16fBF98a7dDc3957168Ae4670d63582DEF3D67C7",
+        "tokenMetadata": {
+          "symbol": "USDT",
+          "chain": "ARBITRUM",
+          "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+          "decimals": 6,
+          "name": "Tether USD",
+          "logoURI": "https://tokens.1inch.io/0xdac17f958d2ee523a2206206994597c13d831ec7.png"
+        },
+        "amount": "430600",
+        "price": "430214"
+      }
+    ]
+  }
+}
