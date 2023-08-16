@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 // TODO
 // - Slideout doesnt show when fullscreen
 // - Finish Unity logout -> iframe logout (needs frontend refactor)
-// - Payment/Charge functionality
 // - Refactor SphereOneWindowManager, break into multiple classes and prefabs (collectables gallery, wallets, balances)
 // - Replace Newtonsoft.Json with Unity built in
 // - Popup Auth mode: auto refresh token when expired
@@ -21,9 +22,6 @@ namespace SphereOne
 #if UNITY_WEBGL
         [DllImport("__Internal")]
         static extern string OpenWindow(string url);
-
-        [DllImport("__Internal")]
-        static extern void CloseWindow();
 
         [DllImport("__Internal")]
         static extern void SendLogoutMsg();
@@ -58,8 +56,8 @@ namespace SphereOne
         const string LOCAL_STORAGE_CREDENTIALS = "sphere_one_credentials";
         const string LOCAL_STORAGE_STATE = "sphere_one_state";
 
-        const string DOMAIN = "https://sphereone.us.auth0.com";
-        const string AUDIENCE = "https://sphereone.us.auth0.com/api/v2/";
+        const string DOMAIN = "https://relaxed-kirch-zjpimqs5qe.projects.oryapis.com";
+        const string AUDIENCE = "https://relaxed-kirch-zjpimqs5qe.projects.oryapis.com";
         const string IFRAME_URL = "https://wallet.sphereone.xyz";
 
         [SerializeField] Environment _environment = Environment.PRODUCTION;
@@ -73,9 +71,10 @@ namespace SphereOne
         [Tooltip("Filter the background when the slideout is open")]
         [SerializeField] BackgroundFilter _backgroundFilter = BackgroundFilter.DARKEN;
 
+        // localhost: http://127.0.0.1:5001/sphereone-testing/us-central1/api
         [SerializeField] string _sphereOneApiUrl = "https://api-olgsdff53q-uc.a.run.app";
         [SerializeField] string _clientId;
-        [SerializeField] string _clientSecret;
+
         [Tooltip("The URL of your game. This is where the Auth Provider will redirect back to.")]
         [SerializeField] string _redirectUrl;
         [SerializeField] string _apiKey;
@@ -102,6 +101,7 @@ namespace SphereOne
         public Environment Environment { get { return _environment; } }
 
         Credentials _credentials;
+        string _wrappedDek;
         Dictionary<string, string> _headers;
         bool _forceRefreshCache = true;
 
@@ -109,7 +109,7 @@ namespace SphereOne
 
         void Awake()
         {
-            ValidateSetup();
+            ValidateConfiguration();
 
             _logger = new SphereOneLogger(_enableLogging);
 
@@ -151,7 +151,6 @@ namespace SphereOne
                 LoadCredentials(credentials);
                 return;
             }
-
 
             switch (_loginMode)
             {
@@ -226,21 +225,17 @@ namespace SphereOne
             var authUrl = $"{_sphereOneApiUrl}/auth";
             authUrl += $"?code={code}";
             authUrl += $"&clientId={_clientId}";
-            authUrl += $"&clientSecret={_clientSecret}";
             authUrl += $"&redirectUri={_redirectUrl}";
             authUrl += $"&state={state}";
 
-            await WebRequestWrapper.SendRequest(authUrl, RequestType.GET, null, null, OnComplete);
+            var res = await WebRequestHandler.Get(authUrl, null);
 
-            void OnComplete(string text)
-            {
-                if (text == WebRequestWrapper.CALLBACK_ERR)
-                    return;
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return;
 
-                var credentials = JsonConvert.DeserializeObject<CredentialsWrapper>(text).data;
+            var credentials = JsonConvert.DeserializeObject<CredentialsWrapper>(res).data;
 
-                LoadCredentials(credentials);
-            }
+            LoadCredentials(credentials);
         }
 
         // Do not rename this function without updating sphereone.jslib and/or bridge.js
@@ -273,17 +268,26 @@ namespace SphereOne
             }
         }
 
-        void OpenPopupWindow()
+        async void OpenPopupWindow()
         {
             if (_loginMode != LoginBehavior.POPUP) return;
 
             if (IsAuthenticated) return;
 
+            // Get configuration
+            string configUrl = $"{DOMAIN}/.well-known/openid-configuration";
+            var res = await WebRequestHandler.Get(configUrl, null);
+
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return;
+
+            var openIdConfig = JsonConvert.DeserializeObject<OpenIdConfiguration>(res);
+
             // Generate secure random state
             var state = SphereOneUtils.SecureRandomString(24, true);
             SPrefs.SetString(LOCAL_STORAGE_STATE, state);
 
-            var url = $"{DOMAIN}/authorize?response_type=code&client_id={_clientId}&state={state}&redirect_uri={_redirectUrl}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access";
+            var url = $"{openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&redirect_uri={_redirectUrl}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access";
 
             if (!Application.isEditor)
             {
@@ -313,7 +317,6 @@ namespace SphereOne
 #endif
             }
 
-
             _logger.Log("User logged out. Local cookies cleared.");
 
             onUserLogout?.Invoke();
@@ -334,7 +337,9 @@ namespace SphereOne
         void ClearUserData()
         {
             _credentials = null;
+            _wrappedDek = null;
             User = null;
+
             Wallets.Clear();
             Balances.Clear();
             Nfts.Clear();
@@ -346,6 +351,7 @@ namespace SphereOne
 
         void TryLoadTokenFromLocalStorage()
         {
+            // Only store credentials locally in popup mode
             if (_loginMode != LoginBehavior.POPUP) return;
 
             var savedCredentialsJson = SPrefs.GetString(LOCAL_STORAGE_CREDENTIALS);
@@ -362,7 +368,6 @@ namespace SphereOne
                 return;
 
             _credentials = credentials;
-
 
             _logger.Log($"User authenticated.");
 
@@ -397,99 +402,104 @@ namespace SphereOne
             FetchUserBalances();
         }
 
+        async Task<string> GetWrappedDek()
+        {
+            if (_wrappedDek != null)
+                return _wrappedDek;
+
+            string url = $"{_sphereOneApiUrl}/createOrRecoverAccount";
+            var res = await WebRequestHandler.Post(url, null, _headers);
+
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
+
+            _wrappedDek = JsonConvert.DeserializeObject<WrappedDekWrapper>(res).data;
+
+            return _wrappedDek;
+        }
+
         // API functions
-        async public void FetchUserInfo()
+        async public Task<User> FetchUserInfo()
         {
             if (_environment == Environment.EDITOR)
             {
-                LoadUser(MockApiDataFactory.Instance.GetMockUser());
-                return;
+                var usrJson = MockApiDataFactory.Instance.GetMockUser();
+                return LoadUser(usrJson);
             }
 
             CheckJwtExpiration();
 
             string url = $"{_sphereOneApiUrl}/user";
-            await WebRequestWrapper.SendRequest(url, RequestType.GET, null, _headers, OnComplete);
+            var res = await WebRequestHandler.Get(url, _headers);
 
-            void OnComplete(string text)
-            {
-                if (text == WebRequestWrapper.CALLBACK_ERR)
-                    return;
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
 
-                LoadUser(text);
-            }
+            return LoadUser(res);
         }
 
-        void LoadUser(string json)
+        User LoadUser(string json)
         {
             User = JsonConvert.DeserializeObject<UserWrapper>(json).data;
-
 
             _logger.Log($"User loaded: {User.name}");
 
             onUserLoaded?.Invoke(User);
+
+            return User;
         }
 
-        async public void FetchUserWallets()
+        async public Task<List<Wallet>> FetchUserWallets()
         {
             if (_environment == Environment.EDITOR)
             {
-                LoadWallets(MockApiDataFactory.Instance.GetMockWallets());
-                return;
+                return LoadWallets(MockApiDataFactory.Instance.GetMockWallets()); ;
             }
 
             CheckJwtExpiration();
 
             string url = $"{_sphereOneApiUrl}/user/wallets";
-            await WebRequestWrapper.SendRequest(url, RequestType.GET, null, _headers, OnComplete);
+            var res = await WebRequestHandler.Get(url, _headers);
 
-            void OnComplete(string text)
-            {
-                if (text == WebRequestWrapper.CALLBACK_ERR)
-                    return;
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
 
-                LoadWallets(text);
-            }
+            return LoadWallets(res);
         }
 
-        void LoadWallets(string json)
+        List<Wallet> LoadWallets(string json)
         {
             Wallets = JsonConvert.DeserializeObject<WalletWrapper>(json).data;
-
 
             foreach (var w in Wallets)
             {
                 _logger.Log($"Wallet loaded: {w.address}");
             }
 
-
             onUserWalletsLoaded?.Invoke(Wallets);
+
+            return Wallets;
         }
 
-
-        async public void FetchUserBalances()
+        async public Task<List<Balance>> FetchUserBalances()
         {
             if (_environment == Environment.EDITOR)
             {
-                LoadBalances(MockApiDataFactory.Instance.GetMockBalances());
-                return;
+                return LoadBalances(MockApiDataFactory.Instance.GetMockBalances()); ;
             }
 
             CheckJwtExpiration();
 
             string url = $"{_sphereOneApiUrl}/getFundsAvailable?refreshCache={_forceRefreshCache.ToString().ToLower()}";
-            await WebRequestWrapper.SendRequest(url, RequestType.GET, null, _headers, OnComplete);
+            var res = await WebRequestHandler.Get(url, _headers);
 
-            void OnComplete(string text)
-            {
-                if (text == WebRequestWrapper.CALLBACK_ERR)
-                    return;
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
 
-                LoadBalances(text);
-            }
+            return LoadBalances(res);
         }
 
-        void LoadBalances(string json)
+        List<Balance> LoadBalances(string json)
         {
             var data = JsonConvert.DeserializeObject<BalancesWrapper>(json).data;
             Balances = data.balances;
@@ -500,31 +510,29 @@ namespace SphereOne
             _forceRefreshCache = false;
 
             onUserBalancesLoaded?.Invoke(Balances);
+
+            return Balances;
         }
 
-        async public void FetchUserNfts()
+        async public Task<List<Nft>> FetchUserNfts()
         {
             if (_environment == Environment.EDITOR)
             {
-                LoadNfts(MockApiDataFactory.Instance.GetMockNfts());
-                return;
+                return LoadNfts(MockApiDataFactory.Instance.GetMockNfts()); ;
             }
 
             CheckJwtExpiration();
 
             string url = $"{_sphereOneApiUrl}/getNftsAvailable";
-            await WebRequestWrapper.SendRequest(url, RequestType.GET, null, _headers, OnComplete);
+            var res = await WebRequestHandler.Get(url, _headers);
 
-            void OnComplete(string text)
-            {
-                if (text == WebRequestWrapper.CALLBACK_ERR)
-                    return;
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
 
-                LoadNfts(text);
-            }
+            return LoadNfts(res);
         }
 
-        void LoadNfts(string json)
+        List<Nft> LoadNfts(string json)
         {
             Nfts = JsonConvert.DeserializeObject<NftWrapper>(json).data;
 
@@ -534,12 +542,104 @@ namespace SphereOne
             }
 
             onUserNftsLoaded?.Invoke(Nfts);
+
+            return Nfts;
+        }
+
+        /// <summary>
+        /// Create a charge to be paid later
+        /// </summary>
+        /// <param name="chargeReq"></param>
+        /// <param name="isTest">Not required. Determines if API Key is test or production. By default, it is false.</param>
+        /// <returns>The ChargeResponse object or null.</returns>
+        async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false)
+        {
+            if (_environment == Environment.EDITOR)
+            {
+                // TODO fake charge mock data
+                return null;
+            }
+
+            CheckJwtExpiration();
+
+            var body = new CreateChargeReqBodyWrapper(chargeReq, isTest);
+            var bodySerialized = JsonConvert.SerializeObject(body);
+
+            string url = $"{_sphereOneApiUrl}/createCharge";
+            var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
+
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
+
+            var chargeResponse = JsonConvert.DeserializeObject<CreateChargeResponseWrapper>(res).data;
+
+            return chargeResponse;
+        }
+
+        async public Task<PayResponse> PayCharge(string transactionId)
+        {
+            if (_environment == Environment.EDITOR)
+            {
+                // TODO fake charge mock data
+                return null;
+            }
+
+            CheckJwtExpiration();
+
+            var dek = await GetWrappedDek();
+
+            if (dek == null)
+                return null;
+
+            var body = new PayChargeReqBody(dek, transactionId);
+            var bodySerialized = JsonConvert.SerializeObject(body);
+
+            string url = $"{_sphereOneApiUrl}/pay";
+            var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
+
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
+
+            var payResponse = JsonConvert.DeserializeObject<PayResponseWrapper>(res).data;
+
+            return payResponse;
+        }
+
+        async public Task<PayResponse> Pay(Transaction transaction)
+        {
+            if (_environment == Environment.EDITOR)
+            {
+                // TODO fake charge mock data
+                return null;
+            }
+
+            CheckJwtExpiration();
+
+            var dek = await GetWrappedDek();
+
+            if (dek == null)
+                return null;
+
+            var bodySerialized = JsonConvert.SerializeObject(transaction);
+
+            string url = $"{_sphereOneApiUrl}/pay";
+            var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
+
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
+
+            var payResponse = JsonConvert.DeserializeObject<PayResponseWrapper>(res).data;
+
+            return payResponse;
         }
 
         void SetupAuthHeader()
         {
             _headers.Clear();
             _headers.Add("Authorization", $"Bearer {_credentials.access_token}");
+            _headers.Add("x-api-key", _apiKey);
+            _headers.Add("sphere-one-source", "unity-sdk");
+            _headers.Add("sphere-one-client-id", _clientId);
         }
 
         void CheckJwtExpiration()
@@ -564,7 +664,7 @@ namespace SphereOne
 
         }
 
-        public void ValidateSetup()
+        public void ValidateConfiguration()
         {
             string pre = "SphereOneSDK: Invalid Configuration. ";
 
@@ -577,7 +677,6 @@ namespace SphereOne
             if (!Application.isEditor && _environment == Environment.EDITOR)
                 throw new Exception(pre + "Environment EDITOR can only be used in the editor. You must switch to PRODUCTION before building.");
 
-            
             if (string.IsNullOrEmpty(_sphereOneApiUrl))
                 throw new Exception(pre + "Sphere One Api URL is required");
 
@@ -593,9 +692,6 @@ namespace SphereOne
                 if (string.IsNullOrEmpty(_clientId))
                     throw new Exception(pre + "Client Id is required");
 
-                if (string.IsNullOrEmpty(_clientSecret))
-                    throw new Exception(pre + "Client Secret is required");
-
                 if (string.IsNullOrEmpty(_redirectUrl))
                     throw new Exception(pre + "Redirect URL is required");
 
@@ -607,6 +703,15 @@ namespace SphereOne
 
             }
         }
+    }
+
+    [Serializable]
+    class OpenIdConfiguration
+    {
+        public string issuer;
+        public string authorization_endpoint;
+        public string token_endpoint;
+        // ...
     }
 
     [Serializable]
@@ -662,8 +767,59 @@ namespace SphereOne
         public string expires_in;
         public string token_type;
     }
+
+    [Serializable]
+    class WrappedDekWrapper : ApiResponseWrapper
+    {
+        public string data;
+    }
+
+    [Serializable]
+    class PayChargeWrapper
+    {
+        public PayChargeWrapper(PayChargeReqBody data)
+        {
+            this.data = data;
+        }
+
+        public PayChargeReqBody data;
+    }
+
+    [Serializable]
+    class PayChargeReqBody
+    {
+        public PayChargeReqBody(string wrappedDek, string transactionId)
+        {
+            this.wrappedDek = wrappedDek;
+            this.transactionId = transactionId;
+        }
+
+        public string wrappedDek;
+        public string transactionId;
+    }
+
+    [Serializable]
+    class PayResponseWrapper : ApiResponseWrapper
+    {
+        public PayResponse data;
+    }
+
+    [Serializable]
+    class CreateChargeReqBodyWrapper
+    {
+        public CreateChargeReqBodyWrapper(ChargeReqBody chargeData, bool isTest)
+        {
+            this.isTest = isTest;
+            this.chargeData = chargeData;
+        }
+
+        public bool isTest;
+        public ChargeReqBody chargeData;
+    }
+
+    [Serializable]
+    class CreateChargeResponseWrapper : ApiResponseWrapper
+    {
+        public ChargeResponse data;
+    }
 }
-
-
-
-

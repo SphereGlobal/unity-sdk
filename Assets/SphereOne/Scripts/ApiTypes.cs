@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using Newtonsoft.Json;
 
@@ -26,6 +27,18 @@ namespace SphereOne
     {
         EOA,
         SMARTWALLET,
+        Unknown
+    }
+
+    [JsonConverter(typeof(TolerantEnumConverter))]
+    public enum TxStatus
+    {
+        PENDING, // Not executed already
+        PROCESSING, // Waiting to get mined
+        SUCCESS,
+        FAILURE,
+        CANCELED,
+        WAITING, // Waiting for user to finish the provider flow
         Unknown
     }
 
@@ -82,5 +95,100 @@ namespace SphereOne
         public string name;
         public string address;
         public string tokenType;
+    }
+
+    [Serializable]
+    public class ChargeItem
+    {
+        public ChargeItem() { }
+
+        public ChargeItem(string name, string image, double amount, double quantity)
+        {
+            this.name = name;
+            this.image = image;
+            this.amount = amount;
+            this.quantity = quantity;
+        }
+
+        public string name;
+        public string image;
+        public double amount;
+        public double quantity;
+    }
+
+    [Serializable]
+    public class ChargeReqBody
+    {
+        public ChargeReqBody() { }
+
+        public ChargeReqBody(string tokenAddress, string symbol, List<ChargeItem> items, SupportedChains chain, string successUrl, string cancelUrl, double amount = 0.0, string toAddress = null)
+        {
+            this.tokenAddress = tokenAddress;
+            this.symbol = symbol;
+            this.items = items;
+            this.chain = chain;
+            this.successUrl = successUrl;
+            this.cancelUrl = cancelUrl;
+            this.amount = amount;
+            this.toAddress = toAddress;
+        }
+
+        public string tokenAddress;
+        public string symbol;
+        public List<ChargeItem> items;
+        public SupportedChains chain;
+        public string successUrl;
+        public string cancelUrl;
+
+        // Optional
+        public double amount;
+        public string toAddress;
+    }
+
+    [Serializable]
+    public class ChargeResponse
+    {
+        public string paymentUrl;
+        public string chargeId;
+
+        public override string ToString()
+        {
+            return $"Charge Response: \nPayment Url: {paymentUrl}\nCharge Id: {chargeId}";
+        }
+    }
+
+    [Serializable]
+    public class PayResponse
+    {
+        public TxStatus status;
+
+        // TODO I have no idea what type this is, server code is not clear
+        // public Route route;
+
+        public override string ToString()
+        {
+            return $"Pay Response: \nTx Status: {status}";
+        }
+    }
+
+    [Serializable]
+    public class Transaction
+    {
+        public Transaction() { }
+
+        public Transaction(string toAddress, SupportedChains chain, string symbol, double amount, string tokenAddress)
+        {
+            this.toAddress = toAddress;
+            this.chain = chain;
+            this.symbol = symbol;
+            this.amount = amount;
+            this.tokenAddress = tokenAddress;
+        }
+
+        public string toAddress;
+        public SupportedChains chain;
+        public string symbol;
+        public double amount;
+        public string tokenAddress;
     }
 }

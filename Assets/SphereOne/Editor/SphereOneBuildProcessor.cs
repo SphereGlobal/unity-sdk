@@ -25,7 +25,7 @@ namespace SphereOne
             if (manager[0].Environment == Environment.EDITOR)
                 throw new Exception("SphereOneSDK: Environment EDITOR cannot be used in production builds. You must switch to PRODUCTION before building.");
 
-            manager[0].ValidateSetup();
+            manager[0].ValidateConfiguration();
         }
     }
 }

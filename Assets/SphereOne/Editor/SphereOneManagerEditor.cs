@@ -18,7 +18,6 @@ namespace SphereOne
 
         // Popup
         SerializedProperty _clientId;
-        SerializedProperty _clientSecret;
         SerializedProperty _redirectUrl;
 
         bool _popupSettingsGroup = true;
@@ -36,7 +35,6 @@ namespace SphereOne
             _backgroundFilter = serializedObject.FindProperty("_backgroundFilter");
 
             _clientId = serializedObject.FindProperty("_clientId");
-            _clientSecret = serializedObject.FindProperty("_clientSecret");
             _redirectUrl = serializedObject.FindProperty("_redirectUrl");
         }
 
@@ -70,9 +68,6 @@ namespace SphereOne
 
                     EditorGUILayout.PropertyField(_clientId);
                     _clientId.stringValue = _clientId.stringValue.Trim();
-
-                    EditorGUILayout.PropertyField(_clientSecret);
-                    _clientSecret.stringValue = _clientSecret.stringValue.Trim();
                 }
             }
             else if (_manager.LoginMode == LoginBehavior.SLIDEOUT)
