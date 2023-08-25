@@ -1,3 +1,1 @@
-1) Install SDK
-2) Switch to SphereOne Template
-    - Edit -> Project Settings -> Player
+See https://docs.sphereone.xyz/docs/getting-started-unitysdk for full documentation.
