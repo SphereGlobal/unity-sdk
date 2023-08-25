@@ -244,6 +244,9 @@ namespace SphereOne
             Logout();
         }
 
+        /// <summary>
+        /// Login the user by opening the auth popup window or toggling the slideout.
+        /// </summary>
         public void Login()
         {
             if (IsAuthenticated)
@@ -297,6 +300,9 @@ namespace SphereOne
             }
         }
 
+        /// <summary>
+        /// Logout the user and clear the cache.
+        /// </summary>
         public void Logout()
         {
             if (_loginMode == LoginBehavior.SLIDEOUT)
@@ -322,6 +328,9 @@ namespace SphereOne
             onUserLogout?.Invoke();
         }
 
+        /// <summary>
+        /// Toggle the SphereOne slideout wallet. Does nothing in popup mode.
+        /// </summary>
         public void ToggleSlideout()
         {
             if (_loginMode != LoginBehavior.SLIDEOUT) return;
@@ -419,6 +428,11 @@ namespace SphereOne
         }
 
         // API functions
+
+        /// <summary>
+        /// Fetch the most recent User Info.
+        /// </summary>
+        /// <returns>The <see cref="User"/> object or null if there was an error.</returns>
         async public Task<User> FetchUserInfo()
         {
             if (_environment == Environment.EDITOR)
@@ -449,6 +463,10 @@ namespace SphereOne
             return User;
         }
 
+        /// <summary>
+        /// Fetch the most recent User Wallets.
+        /// </summary>
+        /// <returns>A List of <see cref="Wallet"/> objects or null if there was an error.</returns>
         async public Task<List<Wallet>> FetchUserWallets()
         {
             if (_environment == Environment.EDITOR)
@@ -481,6 +499,10 @@ namespace SphereOne
             return Wallets;
         }
 
+        /// <summary>
+        /// Fetch the most recent User Balances.
+        /// </summary>
+        /// <returns>A List of <see cref="Balance"/> objects or null if there was an error.</returns>
         async public Task<List<Balance>> FetchUserBalances()
         {
             if (_environment == Environment.EDITOR)
@@ -514,6 +536,10 @@ namespace SphereOne
             return Balances;
         }
 
+        /// <summary>
+        /// Fetch the most recent User Nfts.
+        /// </summary>
+        /// <returns>A List of <see cref="Nft"/> objects or null if there was an error.</returns>
         async public Task<List<Nft>> FetchUserNfts()
         {
             if (_environment == Environment.EDITOR)
@@ -547,11 +573,11 @@ namespace SphereOne
         }
 
         /// <summary>
-        /// Create a charge to be paid later
+        /// Create a charge to be paid later.
         /// </summary>
         /// <param name="chargeReq"></param>
         /// <param name="isTest">Not required. Determines if API Key is test or production. By default, it is false.</param>
-        /// <returns>The ChargeResponse object or null.</returns>
+        /// <returns>The <see cref="ChargeResponse"/> object or null if there was an error.</returns>
         async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false)
         {
             if (_environment == Environment.EDITOR)
@@ -576,6 +602,11 @@ namespace SphereOne
             return chargeResponse;
         }
 
+        /// <summary>
+        /// Pay a charge created with <see cref="CreateCharge"/>
+        /// </summary>
+        /// <param name="transactionId">The id of the charge</param>
+        /// <returns>The <see cref="PayResponse"/> object or null if there was an error.</returns>
         async public Task<PayResponse> PayCharge(string transactionId)
         {
             if (_environment == Environment.EDITOR)
@@ -605,6 +636,11 @@ namespace SphereOne
             return payResponse;
         }
 
+        /// <summary>
+        /// Pay a <see cref="Transaction"/>
+        /// </summary>
+        /// <param name="transaction"></param>
+        /// <returns>The <see cref="PayResponse"/> object or null if there was an error.</returns>
         async public Task<PayResponse> Pay(Transaction transaction)
         {
             if (_environment == Environment.EDITOR)

@@ -2358,7 +2358,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _loginMode
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _environment
@@ -2366,7 +2366,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _redirectUrl
-      value: http://localhost:59694
+      value: http://localhost:49328
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _clientSecret
@@ -2386,15 +2386,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6120948545998894704, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 502.818
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6120948545998894704, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 292.64603
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6120948545998894704, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 6077.289
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6120948545998894704, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: m_LocalRotation.w

@@ -102,18 +102,26 @@ namespace SphereOne
     {
         public ChargeItem() { }
 
-        public ChargeItem(string name, string image, double amount, double quantity)
+        public ChargeItem(string name, string image, double amount, double quantity, string nftUri = "", string nftContractAddress = "", SupportedChains nftChain = SupportedChains.Unknown)
         {
             this.name = name;
             this.image = image;
             this.amount = amount;
             this.quantity = quantity;
+            this.nftUri = nftUri;
+            this.nftContractAddress = nftContractAddress;
+            this.nftChain = nftChain;
         }
 
         public string name;
         public string image;
         public double amount;
         public double quantity;
+
+        // Optional
+        public string nftUri;
+        public string nftContractAddress;
+        public SupportedChains nftChain;
     }
 
     [Serializable]

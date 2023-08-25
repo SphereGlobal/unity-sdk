@@ -98,7 +98,7 @@ namespace SphereOne
         [MenuItem("Sphere One/Documentation")]
         static void OpenDocumentation()
         {
-            Application.OpenURL("https://docs.sphereone.xyz/docs");
+            Application.OpenURL("https://docs.sphereone.xyz/docs/getting-started-unitysdk");
         }
     }
 }

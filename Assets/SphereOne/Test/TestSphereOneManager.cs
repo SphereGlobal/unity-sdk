@@ -2,6 +2,7 @@ using UnityEngine;
 using SphereOne;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 
 public class TestSphereOneManager : MonoBehaviour
 {
@@ -31,14 +32,21 @@ public class TestSphereOneManager : MonoBehaviour
             cancelUrl = "https://your-website.com/cancel",
         };
 
-        var charge = await SphereOneManager.Instance.CreateCharge(chargeRequest);
+        var isTest = false;
+        var charge = await SphereOneManager.Instance.CreateCharge(chargeRequest, isTest);
 
-        if (charge == null)
+        if (charge == null) {
+            // Handle the error
             return;
+        }
 
         _chargeId = charge.chargeId;
 
         Debug.Log(charge.ToString());
+
+        // Once the user has logged in
+        // if (SphereOneManager.Instance.IsAuthenticated)
+        // var user = SphereOneManager.Instance.User;
     }
 
     async public void PayCharge()
