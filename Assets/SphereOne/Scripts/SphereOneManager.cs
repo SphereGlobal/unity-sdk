@@ -53,6 +53,8 @@ namespace SphereOne
         public delegate void OnUserNftsLoaded(List<Nft> nfts);
         public static OnUserNftsLoaded onUserNftsLoaded;
 
+        const string SCHEME = "UnitySafariViewControllerScheme";
+
         const string LOCAL_STORAGE_CREDENTIALS = "sphere_one_credentials";
         const string LOCAL_STORAGE_STATE = "sphere_one_state";
 
@@ -290,14 +292,39 @@ namespace SphereOne
             var state = SphereOneUtils.SecureRandomString(24, true);
             SPrefs.SetString(LOCAL_STORAGE_STATE, state);
 
-            var url = $"{openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&redirect_uri={_redirectUrl}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access";
+#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+            // Redirect URL is the same for ios and macos, hardcoded here
+            _redirectUrl = $"{SCHEME}://auth";
+#endif
+
+            var url = $"{openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
 
             if (!Application.isEditor)
             {
 #if UNITY_WEBGL
                 OpenWindow(url);
+#elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+                OpenWebAuthenticationSessionWithRedirectURL(url);
 #endif
             }
+        }
+
+        // iOS and macos (uses ASWebAuthenticationSession under the hood)
+        async void OpenWebAuthenticationSessionWithRedirectURL(string authUrl)
+        {
+#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+            try
+            {
+                var redirectReturnUrl = await WebAuthenticaionSession.PresentWebAuthenticationSessionWithURLAsync(authUrl, SCHEME, true);
+
+                CALLBACK_PopupLoginSuccess(redirectReturnUrl);
+            }
+            catch (Exception e)
+            {
+                var text = e.Message;
+                CALLBACK_PopupLoginError(text);
+            }
+#endif
         }
 
         /// <summary>
@@ -704,11 +731,11 @@ namespace SphereOne
         {
             string pre = "SphereOneSDK: Invalid Configuration. ";
 
-            if (!Application.isEditor)
-            {
-                if (Application.platform != RuntimePlatform.WebGLPlayer)
-                    throw new Exception(pre + "Only WebGL is currently supported.");
-            }
+            // if (!Application.isEditor)
+            // {
+            //     if (Application.platform != RuntimePlatform.WebGLPlayer)
+            //         throw new Exception(pre + "Only WebGL is currently supported.");
+            // }
 
             if (!Application.isEditor && _environment == Environment.EDITOR)
                 throw new Exception(pre + "Environment EDITOR can only be used in the editor. You must switch to PRODUCTION before building.");

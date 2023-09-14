@@ -48,7 +48,17 @@ namespace SphereOne
 
             EditorGUILayout.LabelField("SphereOneSDK", EditorStyles.boldLabel);
 
+#if UNITY_WEBGL
+            EditorGUILayout.LabelField("WebGL Build");
             EditorGUILayout.PropertyField(_loginMode);
+#elif UNITY_IOS
+            EditorGUILayout.LabelField("iOS Build");
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+            EditorGUILayout.LabelField("MacOS Build");
+#endif
+
+            EditorGUILayout.Space();
+
             EditorGUILayout.PropertyField(_environment);
             EditorGUILayout.PropertyField(_sphereOneApiUrl);
             _sphereOneApiUrl.stringValue = _sphereOneApiUrl.stringValue.TrimEnd('/').Trim();
@@ -63,8 +73,10 @@ namespace SphereOne
                 _popupSettingsGroup = EditorGUILayout.BeginFoldoutHeaderGroup(_popupSettingsGroup, "Popup Auth Setup");
                 if (_popupSettingsGroup)
                 {
+#if UNITY_WEBGL
                     EditorGUILayout.PropertyField(_redirectUrl);
                     _redirectUrl.stringValue = _redirectUrl.stringValue.TrimEnd('/').Trim();
+#endif
 
                     EditorGUILayout.PropertyField(_clientId);
                     _clientId.stringValue = _clientId.stringValue.Trim();
@@ -75,7 +87,7 @@ namespace SphereOne
                 _slideoutSettingsGroup = EditorGUILayout.BeginFoldoutHeaderGroup(_slideoutSettingsGroup, "Slideout Auth Setup");
                 if (_slideoutSettingsGroup)
                 {
-                    EditorGUILayout.PropertyField(_backgroundFilter);                  
+                    EditorGUILayout.PropertyField(_backgroundFilter);
                 }
             }
 
