@@ -2,10 +2,8 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 
 // TODO
 // - Slideout doesnt show when fullscreen
@@ -295,6 +293,8 @@ namespace SphereOne
 #if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             // Redirect URL is the same for ios and macos, hardcoded here
             _redirectUrl = $"{SCHEME}://auth";
+#elif UNITY_ANDROID
+            _redirectUrl = $"io.identitymodel.native://callback";
 #endif
 
             var url = $"{openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
@@ -305,7 +305,11 @@ namespace SphereOne
                 OpenWindow(url);
 #elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
                 OpenWebAuthenticationSessionWithRedirectURL(url);
+#elif UNITY_ANDROID
+                // ChromeCustomTab.OpenCustomTab(url, "#000000", "#000000");
+                AndroidChromeCustomTab.LaunchUrl(url);
 #endif
+
             }
         }
 

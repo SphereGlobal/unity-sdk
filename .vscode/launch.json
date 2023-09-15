@@ -2,6 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Android Player",
+            "type": "unity",
+            "request": "launch"
+        },
+        {
             "name": "iOS Player",
             "type": "unity",
             "request": "launch"
