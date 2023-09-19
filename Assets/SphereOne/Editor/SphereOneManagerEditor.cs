@@ -12,6 +12,7 @@ namespace SphereOne
         SerializedProperty _sphereOneApiUrl;
         SerializedProperty _apiKey;
         SerializedProperty _enableLogging;
+        SerializedProperty _debugText;
 
         // Slideout
         SerializedProperty _backgroundFilter;
@@ -31,6 +32,7 @@ namespace SphereOne
             _sphereOneApiUrl = serializedObject.FindProperty("_sphereOneApiUrl");
             _apiKey = serializedObject.FindProperty("_apiKey");
             _enableLogging = serializedObject.FindProperty("_enableLogging");
+            _debugText = serializedObject.FindProperty("_debugText");
 
             _backgroundFilter = serializedObject.FindProperty("_backgroundFilter");
 
@@ -65,6 +67,7 @@ namespace SphereOne
             EditorGUILayout.PropertyField(_apiKey);
             _apiKey.stringValue = _apiKey.stringValue.Trim();
             EditorGUILayout.PropertyField(_enableLogging);
+            EditorGUILayout.PropertyField(_debugText);
 
             EditorGUILayout.Space(8);
 

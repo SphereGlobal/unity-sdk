@@ -19,6 +19,7 @@ namespace SphereOne
         ARBITRUM,
         FANTOM,
         EOSEVM,
+        FLOW,
         Unknown
     }
 

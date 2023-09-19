@@ -16,17 +16,17 @@ public class TestSphereOneManager : MonoBehaviour
             {
                 name = "Your Item",
                 image = "https://your-image-url.somewhere.com",
-                amount = 0.9,
+                amount = 3,
                 quantity = 1,
             }
         };
 
         var chargeRequest = new ChargeReqBody
         {
-            chain = SupportedChains.SOLANA,
-            symbol = "SOL",
-            amount = 0.9,
-            tokenAddress = "So11111111111111111111111111111111111111112",
+            chain = SupportedChains.POLYGON,
+            symbol = "MATIC",
+            amount = 3,
+            tokenAddress = "0x0000000000000000000000000000000000000000",
             items = chargeItems,
             successUrl = "https://your-website.com/success",
             cancelUrl = "https://your-website.com/cancel",
@@ -41,8 +41,6 @@ public class TestSphereOneManager : MonoBehaviour
         }
 
         _chargeId = charge.chargeId;
-
-        Debug.Log(charge.ToString());
 
         // Once the user has logged in
         // if (SphereOneManager.Instance.IsAuthenticated)

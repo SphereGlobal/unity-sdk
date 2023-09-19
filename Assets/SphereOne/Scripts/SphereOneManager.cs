@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using TMPro;
+// Don't remove this, needed for WebGL DllImport
+using System.Runtime.InteropServices;
 
 // TODO
 // - Slideout doesnt show when fullscreen
@@ -51,7 +54,9 @@ namespace SphereOne
         public delegate void OnUserNftsLoaded(List<Nft> nfts);
         public static OnUserNftsLoaded onUserNftsLoaded;
 
-        const string SCHEME = "UnitySafariViewControllerScheme";
+        // Do not rename these without updating ORY allowed callback urls
+        const string IOS_SCHEME = "UnitySafariViewControllerScheme";
+        const string ANDROID_SCHEME = "sphereone.native";
 
         const string LOCAL_STORAGE_CREDENTIALS = "sphere_one_credentials";
         const string LOCAL_STORAGE_STATE = "sphere_one_state";
@@ -100,18 +105,20 @@ namespace SphereOne
         public LoginBehavior LoginMode { get { return _loginMode; } }
         public Environment Environment { get { return _environment; } }
 
+        OpenIdConfiguration _openIdConfig;
         Credentials _credentials;
         string _wrappedDek;
         Dictionary<string, string> _headers;
         bool _forceRefreshCache = true;
 
+        [SerializeField] TMP_Text _debugText;
         SphereOneLogger _logger;
 
         void Awake()
         {
             ValidateConfiguration();
 
-            _logger = new SphereOneLogger(_enableLogging);
+            _logger = new SphereOneLogger(_enableLogging, _debugText);
 
             _headers = new Dictionary<string, string>();
             Wallets = new List<Wallet>();
@@ -271,20 +278,28 @@ namespace SphereOne
             }
         }
 
-        async void OpenPopupWindow()
+        async Task FetchOpenIdConfiguration()
         {
-            if (_loginMode != LoginBehavior.POPUP) return;
+            // Config is already fetched
+            if (_openIdConfig != null) return;
 
-            if (IsAuthenticated) return;
-
-            // Get configuration
             string configUrl = $"{DOMAIN}/.well-known/openid-configuration";
             var res = await WebRequestHandler.Get(configUrl, null);
 
             if (res == WebRequestHandler.REQUEST_ERR)
                 return;
 
-            var openIdConfig = JsonConvert.DeserializeObject<OpenIdConfiguration>(res);
+            _openIdConfig = JsonConvert.DeserializeObject<OpenIdConfiguration>(res);
+        }
+
+        async void OpenPopupWindow()
+        {
+            if (_loginMode != LoginBehavior.POPUP) return;
+
+            if (IsAuthenticated) return;
+
+            // Get OIDC configuration
+            await FetchOpenIdConfiguration();
 
             // Generate secure random state
             var state = SphereOneUtils.SecureRandomString(24, true);
@@ -292,12 +307,12 @@ namespace SphereOne
 
 #if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             // Redirect URL is the same for ios and macos, hardcoded here
-            _redirectUrl = $"{SCHEME}://auth";
+            _redirectUrl = $"{IOS_SCHEME}://auth";
 #elif UNITY_ANDROID
-            _redirectUrl = $"io.identitymodel.native://callback";
+            _redirectUrl = $"{ANDROID_SCHEME}://auth";
 #endif
 
-            var url = $"{openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
+            var url = $"{_openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
 
             if (!Application.isEditor)
             {
@@ -306,10 +321,8 @@ namespace SphereOne
 #elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
                 OpenWebAuthenticationSessionWithRedirectURL(url);
 #elif UNITY_ANDROID
-                // ChromeCustomTab.OpenCustomTab(url, "#000000", "#000000");
                 AndroidChromeCustomTab.LaunchUrl(url);
 #endif
-
             }
         }
 
@@ -319,7 +332,7 @@ namespace SphereOne
 #if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             try
             {
-                var redirectReturnUrl = await WebAuthenticaionSession.PresentWebAuthenticationSessionWithURLAsync(authUrl, SCHEME, true);
+                var redirectReturnUrl = await WebAuthenticaionSession.PresentWebAuthenticationSessionWithURLAsync(authUrl, IOS_SCHEME, true);
 
                 CALLBACK_PopupLoginSuccess(redirectReturnUrl);
             }
@@ -334,7 +347,7 @@ namespace SphereOne
         /// <summary>
         /// Logout the user and clear the cache.
         /// </summary>
-        public void Logout()
+        public async void Logout()
         {
             if (_loginMode == LoginBehavior.SLIDEOUT)
             {
@@ -352,6 +365,13 @@ namespace SphereOne
                 if (_loginMode == LoginBehavior.SLIDEOUT)
                     SendLogoutMsg();
 #endif
+
+                // Get OIDC configuration if its not already stored
+                await FetchOpenIdConfiguration();
+
+                // Logout OIDC
+                string tokenHint = _credentials != null ? _credentials.id_token : "";
+                await WebRequestHandler.Get($"{_openIdConfig.end_session_endpoint}?id_token_hint={tokenHint}");
             }
 
             _logger.Log("User logged out. Local cookies cleared.");
@@ -630,6 +650,8 @@ namespace SphereOne
 
             var chargeResponse = JsonConvert.DeserializeObject<CreateChargeResponseWrapper>(res).data;
 
+            _logger.Log($"Charge Created: {chargeResponse}");
+
             return chargeResponse;
         }
 
@@ -664,6 +686,8 @@ namespace SphereOne
 
             var payResponse = JsonConvert.DeserializeObject<PayResponseWrapper>(res).data;
 
+            _logger.Log(payResponse.ToString());
+
             return payResponse;
         }
 
@@ -696,6 +720,8 @@ namespace SphereOne
                 return null;
 
             var payResponse = JsonConvert.DeserializeObject<PayResponseWrapper>(res).data;
+
+            _logger.Log(payResponse.ToString());
 
             return payResponse;
         }
@@ -735,12 +761,6 @@ namespace SphereOne
         {
             string pre = "SphereOneSDK: Invalid Configuration. ";
 
-            // if (!Application.isEditor)
-            // {
-            //     if (Application.platform != RuntimePlatform.WebGLPlayer)
-            //         throw new Exception(pre + "Only WebGL is currently supported.");
-            // }
-
             if (!Application.isEditor && _environment == Environment.EDITOR)
                 throw new Exception(pre + "Environment EDITOR can only be used in the editor. You must switch to PRODUCTION before building.");
 
@@ -778,6 +798,8 @@ namespace SphereOne
         public string issuer;
         public string authorization_endpoint;
         public string token_endpoint;
+        public string end_session_endpoint;
+        public string userinfo_endpoint;
         // ...
     }
 
