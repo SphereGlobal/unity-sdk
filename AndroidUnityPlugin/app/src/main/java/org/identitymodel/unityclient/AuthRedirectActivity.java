@@ -27,10 +27,10 @@ public class AuthRedirectActivity extends Activity {
             String query = dataUri.getQuery();
             if (query != null) {
                 Log.v(TAG, String.format("Data uri query: [%s]", query));
-                UnityPlayer.UnitySendMessage("SignInCanvas", "OnAuthReply", query);
+                UnityPlayer.UnitySendMessage("SphereOneManager", "CALLBACK_PopupLoginSuccess", query);
             }else {
                 Log.v(TAG, "Data uri without query");
-                UnityPlayer.UnitySendMessage("SignInCanvas", "OnAuthReply", "");
+                UnityPlayer.UnitySendMessage("SphereOneManager", "CALLBACK_PopupLoginSuccess", "");
             }
         }
 

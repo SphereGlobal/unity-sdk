@@ -32,7 +32,8 @@ dependencies {
 
 task exportJar(type: Copy) {
     from('build/intermediates/aar_main_jar/release/classes.jar')
-    into('build/outputs/jar/release')
+//    into('build/outputs/jar/release')
+    into('../../Assets/Plugins/Android')
     include('classes.jar')
     rename('classes.jar', 'AndroidUnityPlugin.jar')
 }

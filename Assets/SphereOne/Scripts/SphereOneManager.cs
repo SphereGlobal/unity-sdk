@@ -779,11 +779,13 @@ namespace SphereOne
                 if (string.IsNullOrEmpty(_clientId))
                     throw new Exception(pre + "Client Id is required");
 
+#if UNITY_WEBGL
                 if (string.IsNullOrEmpty(_redirectUrl))
                     throw new Exception(pre + "Redirect URL is required");
 
                 if (!SphereOneUtils.IsUrlValid(_redirectUrl))
                     throw new Exception(pre + "Redirect URL invalid.");
+#endif
             }
             else if (_loginMode == LoginBehavior.SLIDEOUT)
             {

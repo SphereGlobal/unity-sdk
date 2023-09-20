@@ -9,7 +9,6 @@ namespace SphereOne
         #region SerializedProperties
         SerializedProperty _loginMode;
         SerializedProperty _environment;
-        SerializedProperty _sphereOneApiUrl;
         SerializedProperty _apiKey;
         SerializedProperty _enableLogging;
         SerializedProperty _debugText;
@@ -29,7 +28,6 @@ namespace SphereOne
         {
             _loginMode = serializedObject.FindProperty("_loginMode");
             _environment = serializedObject.FindProperty("_environment");
-            _sphereOneApiUrl = serializedObject.FindProperty("_sphereOneApiUrl");
             _apiKey = serializedObject.FindProperty("_apiKey");
             _enableLogging = serializedObject.FindProperty("_enableLogging");
             _debugText = serializedObject.FindProperty("_debugText");
@@ -62,8 +60,8 @@ namespace SphereOne
             EditorGUILayout.Space();
 
             EditorGUILayout.PropertyField(_environment);
-            EditorGUILayout.PropertyField(_sphereOneApiUrl);
-            _sphereOneApiUrl.stringValue = _sphereOneApiUrl.stringValue.TrimEnd('/').Trim();
+            // EditorGUILayout.PropertyField(_sphereOneApiUrl);
+            // _sphereOneApiUrl.stringValue = _sphereOneApiUrl.stringValue.TrimEnd('/').Trim();
             EditorGUILayout.PropertyField(_apiKey);
             _apiKey.stringValue = _apiKey.stringValue.Trim();
             EditorGUILayout.PropertyField(_enableLogging);
