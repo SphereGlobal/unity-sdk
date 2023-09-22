@@ -141,7 +141,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &30494854
 RectTransform:
   m_ObjectHideFlags: 0
@@ -158,10 +158,10 @@ RectTransform:
   m_Father: {fileID: 829749190}
   m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 560, y: -1656.6666}
+  m_SizeDelta: {x: 600, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &30494855
 MonoBehaviour:
@@ -976,18 +976,18 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1797584610}
-  - {fileID: 30494854}
-  - {fileID: 334845586}
   - {fileID: 1745338582}
+  - {fileID: 30494854}
   - {fileID: 2001660426}
   - {fileID: 761769923}
+  - {fileID: 334845586}
   m_Father: {fileID: 1439535357}
   m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 883.11725}
-  m_SizeDelta: {x: -100, y: -1766.2345}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: -100, y: -100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &829749191
 MonoBehaviour:
@@ -1006,10 +1006,10 @@ MonoBehaviour:
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 1
+  m_ChildAlignment: 4
   m_StartCorner: 0
-  m_StartAxis: 1
-  m_CellSize: {x: 800, y: 300}
+  m_StartAxis: 0
+  m_CellSize: {x: 600, y: 150}
   m_Spacing: {x: 100, y: 100}
   m_Constraint: 1
   m_ConstraintCount: 2
@@ -1634,7 +1634,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -2495,6 +2495,10 @@ PrefabInstance:
       value: ddc0b6e9-2259-4da4-a8d1-b8010a50e398
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
+      propertyPath: _scheme
+      value: sphereone
+      objectReference: {fileID: 0}
+    - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _clientId
       value: 8a983c52-8011-4ad4-8d8a-903a6c8dd37c
       objectReference: {fileID: 0}
@@ -2512,7 +2516,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _redirectUrl
-      value: http://localhost:55713
+      value: https://localhost:3000
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _clientSecret

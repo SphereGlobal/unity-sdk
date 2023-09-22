@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SphereOne
 {
@@ -61,6 +62,12 @@ namespace SphereOne
             }
 
             return sb.ToString();
+        }
+
+        private static readonly Regex sWhitespace = new(@"\s+");
+        public static string ReplaceWhitespace(string input, string replacement)
+        {
+            return sWhitespace.Replace(input, replacement);
         }
 
         public static bool IsUrlValid(string url)

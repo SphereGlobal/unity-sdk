@@ -19,6 +19,7 @@ namespace SphereOne
         // Popup
         SerializedProperty _clientId;
         SerializedProperty _redirectUrl;
+        SerializedProperty _scheme;
 
         bool _popupSettingsGroup = true;
         bool _slideoutSettingsGroup = true;
@@ -36,6 +37,7 @@ namespace SphereOne
 
             _clientId = serializedObject.FindProperty("_clientId");
             _redirectUrl = serializedObject.FindProperty("_redirectUrl");
+            _scheme = serializedObject.FindProperty("_scheme");
         }
 
         public override void OnInspectorGUI()
@@ -77,6 +79,11 @@ namespace SphereOne
 #if UNITY_WEBGL
                     EditorGUILayout.PropertyField(_redirectUrl);
                     _redirectUrl.stringValue = _redirectUrl.stringValue.TrimEnd('/').Trim();
+#elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
+                    EditorGUILayout.PropertyField(_scheme);
+                    _scheme.stringValue = _scheme.stringValue.Trim();
+                    _scheme.stringValue = SphereOneUtils.ReplaceWhitespace(_scheme.stringValue, "");
+                    _scheme.stringValue = SphereOneUtils.RemoveSpecialCharacters(_scheme.stringValue);
 #endif
 
                     EditorGUILayout.PropertyField(_clientId);

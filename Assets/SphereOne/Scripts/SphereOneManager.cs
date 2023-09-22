@@ -54,10 +54,6 @@ namespace SphereOne
         public delegate void OnUserNftsLoaded(List<Nft> nfts);
         public static OnUserNftsLoaded onUserNftsLoaded;
 
-        // Do not rename these without updating ORY allowed callback urls
-        const string IOS_SCHEME = "UnitySafariViewControllerScheme";
-        const string ANDROID_SCHEME = "sphereone.native";
-
         const string LOCAL_STORAGE_CREDENTIALS = "sphere_one_credentials";
         const string LOCAL_STORAGE_STATE = "sphere_one_state";
 
@@ -82,6 +78,8 @@ namespace SphereOne
 
         [Tooltip("The URL of your game. This is where the Auth Provider will redirect back to.")]
         [SerializeField] string _redirectUrl;
+        [Tooltip("Redirect Scheme Identifier. Must be unique for each game. If you change this, make sure to update AndroidManifest.xml in Assets/Plugins/Android")]
+        [SerializeField] string _scheme = "sphereone";
         [SerializeField] string _apiKey;
 
         public User User;
@@ -305,11 +303,9 @@ namespace SphereOne
             var state = SphereOneUtils.SecureRandomString(24, true);
             SPrefs.SetString(LOCAL_STORAGE_STATE, state);
 
-#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
             // Redirect URL is the same for ios and macos, hardcoded here
-            _redirectUrl = $"{IOS_SCHEME}://auth";
-#elif UNITY_ANDROID
-            _redirectUrl = $"{ANDROID_SCHEME}://auth";
+            _redirectUrl = $"{_scheme}://auth";
 #endif
 
             var url = $"{_openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
@@ -332,7 +328,7 @@ namespace SphereOne
 #if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             try
             {
-                var redirectReturnUrl = await WebAuthenticaionSession.PresentWebAuthenticationSessionWithURLAsync(authUrl, IOS_SCHEME, true);
+                var redirectReturnUrl = await WebAuthenticaionSession.PresentWebAuthenticationSessionWithURLAsync(authUrl, _scheme, true);
 
                 CALLBACK_PopupLoginSuccess(redirectReturnUrl);
             }
@@ -768,7 +764,7 @@ namespace SphereOne
                 throw new Exception(pre + "Sphere One Api URL is required");
 
             if (!SphereOneUtils.IsUrlValid(_sphereOneApiUrl))
-                throw new Exception(pre + "Sphere One Api URL invalid.");
+                throw new Exception(pre + "Sphere One Api URL invalid");
 
             if (string.IsNullOrEmpty(_apiKey))
                 throw new Exception(pre + "Api Key is required");
@@ -785,6 +781,9 @@ namespace SphereOne
 
                 if (!SphereOneUtils.IsUrlValid(_redirectUrl))
                     throw new Exception(pre + "Redirect URL invalid.");
+#elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
+                if (string.IsNullOrEmpty(_scheme))
+                    throw new Exception(pre + "Scheme is required");
 #endif
             }
             else if (_loginMode == LoginBehavior.SLIDEOUT)
