@@ -5,15 +5,14 @@ using UnityEngine;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 using TMPro;
-// Don't remove this, needed for WebGL DllImport
+// Don't remove this! needed for WebGL DllImport
 using System.Runtime.InteropServices;
 
 // TODO
 // - Slideout doesnt show when fullscreen
-// - Finish Unity logout -> iframe logout (needs frontend refactor)
+// - Finish Unity logout -> iframe logout
 // - Refactor SphereOneWindowManager, break into multiple classes and prefabs (collectables gallery, wallets, balances)
 // - Replace Newtonsoft.Json with Unity built in
-// - Popup Auth mode: auto refresh token when expired
 
 namespace SphereOne
 {
@@ -310,7 +309,6 @@ namespace SphereOne
             _redirectUrl = "http://localhost:8080/win-standalone/oauth2/";
 #endif
 
-
             var authorizationUrl = $"{_openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
 
 #if UNITY_WEBGL
@@ -357,7 +355,7 @@ namespace SphereOne
         {
             if (_loginMode == LoginBehavior.SLIDEOUT)
             {
-                // TODO - frontend (app) needs a logout refactor first
+                // TODO - finish this - frontend logout has been refactored
                 // See app -> RootNavigator.tsx
                 _logger.LogError("Logout currently not implemented for SLIDEOUT mode.");
                 return;

@@ -20,10 +20,10 @@ namespace SphereOne
         SerializedProperty _clientId;
         SerializedProperty _redirectUrl;
         SerializedProperty _scheme;
+        #endregion
 
         bool _popupSettingsGroup = true;
         bool _slideoutSettingsGroup = true;
-        #endregion
 
         void OnEnable()
         {
@@ -55,12 +55,14 @@ namespace SphereOne
             EditorGUILayout.PropertyField(_loginMode);
 #elif UNITY_IOS
             EditorGUILayout.LabelField("iOS Build");
+#elif UNITY_ANDROID
+            EditorGUILayout.LabelField("Android Build");
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             EditorGUILayout.LabelField("MacOS Standalone Build");
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-            EditorGUILayout.LabelField("Win Standalone Build");
+            EditorGUILayout.LabelField("Windows Standalone Build");
 #else
-            EditorGUILayout.LabelField("Platform not supported!");
+            EditorGUILayout.LabelField("Platform not supported");
 #endif
 
             EditorGUILayout.Space();
