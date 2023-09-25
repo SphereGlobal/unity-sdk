@@ -56,7 +56,11 @@ namespace SphereOne
 #elif UNITY_IOS
             EditorGUILayout.LabelField("iOS Build");
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-            EditorGUILayout.LabelField("MacOS Build");
+            EditorGUILayout.LabelField("MacOS Standalone Build");
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            EditorGUILayout.LabelField("Win Standalone Build");
+#else
+            EditorGUILayout.LabelField("Platform not supported!");
 #endif
 
             EditorGUILayout.Space();

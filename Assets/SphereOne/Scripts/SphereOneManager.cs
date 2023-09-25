@@ -303,23 +303,23 @@ namespace SphereOne
             var state = SphereOneUtils.SecureRandomString(24, true);
             SPrefs.SetString(LOCAL_STORAGE_STATE, state);
 
-#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
+#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             // Redirect URL is the same for ios and macos, hardcoded here
             _redirectUrl = $"{_scheme}://auth";
 #endif
 
-            var url = $"{_openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
+            _redirectUrl = "http://localhost:8080/win-standalone/oauth2/";
 
-            if (!Application.isEditor)
-            {
+            var authorizationUrl = $"{_openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
+
 #if UNITY_WEBGL
-                OpenWindow(url);
-#elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-                OpenWebAuthenticationSessionWithRedirectURL(url);
+                OpenWindow(authorizationUrl);
+#elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+                OpenWebAuthenticationSessionWithRedirectURL(authorizationUrl);
 #elif UNITY_ANDROID
-                AndroidChromeCustomTab.LaunchUrl(url);
+                AndroidChromeCustomTab.LaunchUrl(authorizationUrl);
 #endif
-            }
+            
         }
 
         // iOS and macos (uses ASWebAuthenticationSession under the hood)
@@ -336,6 +336,16 @@ namespace SphereOne
             {
                 var text = e.Message;
                 CALLBACK_PopupLoginError(text);
+            }
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+
+            var _browser = new StandaloneBrowser();
+            var browserResult =
+                    await _browser.StartAsync(authUrl, _redirectUrl);
+            if (browserResult.status == BrowserStatus.Success)
+            {
+                // 3. Exchange authorization code for access and refresh tokens.
+                CALLBACK_PopupLoginSuccess(browserResult.redirectUrl); 
             }
 #endif
         }
