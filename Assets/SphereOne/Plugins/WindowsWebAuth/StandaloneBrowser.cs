@@ -6,7 +6,7 @@ using UnityEngine;
 
 
 /// <summary>
-/// OAuth 2.0 verification browser that runs a local server and waits for a call with
+/// OAuth 2.0 verification browser that runs a local server and waits for a callback with
 /// the authorization verification code.
 /// </summary>
 public class StandaloneBrowser
@@ -35,7 +35,6 @@ public class StandaloneBrowser
         {
 
             redirectUrl = AddForwardSlashIfNecessary(redirectUrl);
-            Debug.Log(redirectUrl);
             httpListener.Prefixes.Add(redirectUrl);
             httpListener.Start();
             httpListener.BeginGetContext(IncomingHttpRequest, httpListener);

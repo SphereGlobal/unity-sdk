@@ -39,7 +39,7 @@ public class WalletListItem : MonoBehaviour
                 break;
 
             default:
-                Debug.LogError($"WalletType enum {_wallet.type.ToString()} not supported;");
+                Debug.LogError($"WalletType enum {_wallet.type} not supported;");
                 break;
         }
     }

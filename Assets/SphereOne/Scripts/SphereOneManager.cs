@@ -303,51 +303,51 @@ namespace SphereOne
             var state = SphereOneUtils.SecureRandomString(24, true);
             SPrefs.SetString(LOCAL_STORAGE_STATE, state);
 
-#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_ANDROID
             // Redirect URL is the same for ios and macos, hardcoded here
             _redirectUrl = $"{_scheme}://auth";
+#elif UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            _redirectUrl = "http://localhost:8080/win-standalone/oauth2/";
 #endif
 
-            _redirectUrl = "http://localhost:8080/win-standalone/oauth2/";
 
             var authorizationUrl = $"{_openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
 
 #if UNITY_WEBGL
-                OpenWindow(authorizationUrl);
+            OpenWindow(authorizationUrl);
 #elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-                OpenWebAuthenticationSessionWithRedirectURL(authorizationUrl);
+            OpenWebAuthenticationSessionWithRedirectURL(authorizationUrl);
 #elif UNITY_ANDROID
-                AndroidChromeCustomTab.LaunchUrl(authorizationUrl);
+            AndroidChromeCustomTab.LaunchUrl(authorizationUrl);
 #endif
-            
+
         }
 
-        // iOS and macos (uses ASWebAuthenticationSession under the hood)
+        // iOS and macos (uses ASWebAuthenticationSession under the hood), windows runs a local server and waits for a callback 
         async void OpenWebAuthenticationSessionWithRedirectURL(string authUrl)
         {
-#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             try
             {
+#if UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
                 var redirectReturnUrl = await WebAuthenticaionSession.PresentWebAuthenticationSessionWithURLAsync(authUrl, _scheme, true);
 
                 CALLBACK_PopupLoginSuccess(redirectReturnUrl);
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+                var _browser = new StandaloneBrowser();
+                var browserResult =
+                        await _browser.StartAsync(authUrl, _redirectUrl);
+                if (browserResult.status == BrowserStatus.Success)
+                {
+                    // 3. Exchange authorization code for access and refresh tokens.
+                    CALLBACK_PopupLoginSuccess(browserResult.redirectUrl); 
+                }
+#endif
             }
             catch (Exception e)
             {
                 var text = e.Message;
                 CALLBACK_PopupLoginError(text);
             }
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-
-            var _browser = new StandaloneBrowser();
-            var browserResult =
-                    await _browser.StartAsync(authUrl, _redirectUrl);
-            if (browserResult.status == BrowserStatus.Success)
-            {
-                // 3. Exchange authorization code for access and refresh tokens.
-                CALLBACK_PopupLoginSuccess(browserResult.redirectUrl); 
-            }
-#endif
         }
 
         /// <summary>
