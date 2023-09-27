@@ -53,5 +53,13 @@ public class TestSphereOneManager : MonoBehaviour
             return;
 
         var payment = await SphereOneManager.Instance.PayCharge(_chargeId);
+
+        if (payment == null)
+        {
+            // Handle the error
+            return;
+        }
+
+        Debug.Log(payment.ToString());
     }
 }
