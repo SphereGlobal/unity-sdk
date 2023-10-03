@@ -15,15 +15,6 @@ namespace SphereOne
         {
             var request = new UnityWebRequest(path, type.ToString());
 
-            // not tested
-            // if (bodyData.GetType() == typeof(WWWForm))
-            // {
-            //     var form = (WWWForm)bodyData;
-
-            //     request.uploadHandler = new UploadHandlerRaw(form.data);
-            //     request.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            // } else
-
             if (bodyData != null)
             {
                 // Raw body (json)
@@ -47,6 +38,22 @@ namespace SphereOne
                 }
             }
 
+            return request;
+        }
+
+        static UnityWebRequest CreateFormRequest(string path, RequestType type = RequestType.POST, WWWForm body = null, Dictionary<string, string> headers = null)
+        {
+            var request = new UnityWebRequest(path, type.ToString());
+            request.uploadHandler = new UploadHandlerRaw(body.data);
+            request.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            request.downloadHandler = new DownloadHandlerBuffer();
+            if (headers != null)
+            {
+                foreach (var item in headers)
+                {
+                    AttachHeader(request, item.Key, item.Value);
+                }
+            }
             return request;
         }
 
@@ -80,6 +87,21 @@ namespace SphereOne
             return request.downloadHandler.text;
         }
 
+        static public async Task<string> Post(string path, WWWForm form, Dictionary<string, string> headers = null)
+        {
+            UnityWebRequest request = CreateFormRequest(path, RequestType.POST, form, headers);
+            var t = request.SendWebRequest();
+
+            while (!t.isDone)
+                await Task.Yield();
+
+            if (!IsResponseSuccessful(request, true))
+                return REQUEST_ERR;
+
+            // Success
+            return request.downloadHandler.text;
+        }
+
         public static async Task<Texture2D> GetRemoteTexture(string url)
         {
             using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
@@ -95,23 +117,23 @@ namespace SphereOne
             return DownloadHandlerTexture.GetContent(request);
         }
 
-        static bool IsResponseSuccessful(UnityWebRequest request)
+        static bool IsResponseSuccessful(UnityWebRequest request, bool mute = false)
         {
             string url = request.url;
             switch (request.result)
             {
                 case UnityWebRequest.Result.ConnectionError:
-                    Debug.LogError(url + ": Connection Error: " + request.error);
+                    if (!mute) Debug.LogError(url + ": Connection Error: " + request.error);
                     return false;
                 case UnityWebRequest.Result.DataProcessingError:
-                    Debug.LogError(url + ": Error: " + request.error);
+                    if (!mute) Debug.LogError(url + ": Error: " + request.error);
                     return false;
                 case UnityWebRequest.Result.ProtocolError:
-                    Debug.LogError(url + ": HTTP Error: " + request.error + ", " + request.downloadHandler.text);
+                    if (!mute) Debug.LogError(url + ": HTTP Error: " + request.error + ", " + request.downloadHandler.text);
                     return false;
                 case UnityWebRequest.Result.Success:
-                    //Debug.Log(url + ":\nReceived: " + webRequest.downloadHandler.text);
-                    return true;
+                    if (!mute) { /*Debug.Log(url + ":\nReceived: " + webRequest.downloadHandler.text);*/ } 
+                        return true;
             }
 
             return false;

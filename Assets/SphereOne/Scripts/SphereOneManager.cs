@@ -472,7 +472,7 @@ namespace SphereOne
                 return _wrappedDek;
 
             string url = $"{_sphereOneApiUrl}/createOrRecoverAccount";
-            var res = await WebRequestHandler.Post(url, null, _headers);
+            var res = await WebRequestHandler.Post(url, "", _headers);
 
             if (res == WebRequestHandler.REQUEST_ERR)
                 return null;
@@ -496,7 +496,7 @@ namespace SphereOne
                 return LoadUser(usrJson);
             }
 
-            CheckJwtExpiration();
+            await CheckJwtExpiration();
 
             string url = $"{_sphereOneApiUrl}/user";
             var res = await WebRequestHandler.Get(url, _headers);
@@ -529,7 +529,7 @@ namespace SphereOne
                 return LoadWallets(MockApiDataFactory.Instance.GetMockWallets()); ;
             }
 
-            CheckJwtExpiration();
+            await CheckJwtExpiration();
 
             string url = $"{_sphereOneApiUrl}/user/wallets";
             var res = await WebRequestHandler.Get(url, _headers);
@@ -565,7 +565,7 @@ namespace SphereOne
                 return LoadBalances(MockApiDataFactory.Instance.GetMockBalances()); ;
             }
 
-            CheckJwtExpiration();
+            await CheckJwtExpiration();
 
             string url = $"{_sphereOneApiUrl}/getFundsAvailable?refreshCache={_forceRefreshCache.ToString().ToLower()}";
             var res = await WebRequestHandler.Get(url, _headers);
@@ -602,7 +602,7 @@ namespace SphereOne
                 return LoadNfts(MockApiDataFactory.Instance.GetMockNfts()); ;
             }
 
-            CheckJwtExpiration();
+            await CheckJwtExpiration();
 
             string url = $"{_sphereOneApiUrl}/getNftsAvailable";
             var res = await WebRequestHandler.Get(url, _headers);
@@ -641,7 +641,7 @@ namespace SphereOne
                 return null;
             }
 
-            CheckJwtExpiration();
+            await CheckJwtExpiration();
 
             var body = new CreateChargeReqBodyWrapper(chargeReq, isTest);
             var bodySerialized = JsonConvert.SerializeObject(body);
@@ -672,7 +672,7 @@ namespace SphereOne
                 return null;
             }
 
-            CheckJwtExpiration();
+            await CheckJwtExpiration();
 
             var dek = await GetWrappedDek();
 
@@ -708,7 +708,7 @@ namespace SphereOne
                 return null;
             }
 
-            CheckJwtExpiration();
+            await CheckJwtExpiration();
 
             var dek = await GetWrappedDek();
 
@@ -739,26 +739,41 @@ namespace SphereOne
             _headers.Add("sphere-one-client-id", _clientId);
         }
 
-        void CheckJwtExpiration()
+        async Task CheckJwtExpiration()
         {
-            if (JwtUtils.IsTokenExpired(_credentials.access_token))
+            if (!string.IsNullOrEmpty(_credentials.access_token) && JwtUtils.IsTokenExpired(_credentials.access_token))
             {
                 // Token is out of date
 
-                _logger.Log("JWT Token is out of date");
+                _logger.Log("JWT Token is expired, attempting to refresh.");
 
-                RefreshToken();
+                await RefreshToken();
             }
             else
             {
-                // Token valid
+                // Token valid or doesn't exist
             }
         }
 
-        // TODO
-        void RefreshToken()
+        public async Task RefreshToken()
         {
 
+            RefreshTokenReqBody body = new RefreshTokenReqBody(_credentials.refresh_token, _clientId);
+            var form = body.ToForm();
+            string refreshUrl = $"{DOMAIN}/oauth2/token";
+            var res = await WebRequestHandler.Post(refreshUrl, form, _headers);
+            var refreshCredentials = JsonConvert.DeserializeObject<Credentials>(res);
+            if (!string.IsNullOrEmpty(refreshCredentials.access_token))
+            {
+                _logger.Log("Successfully refreshed credentials.");
+                _credentials = refreshCredentials;
+                _headers.Remove("Authorization");
+                _headers.Add("Authorization", $"Bearer {_credentials.access_token}");
+            }
+            else
+            {
+                _logger.LogError("Error refreshing credentials");
+            }
         }
 
         public void ValidateConfiguration()
@@ -864,6 +879,36 @@ namespace SphereOne
         public string scope;
         public string expires_in;
         public string token_type;
+
+        // For Debugging, Testing
+        public override string ToString() {
+            return $"access_token: {access_token}\nrefresh_token: {refresh_token}\nid_token: {id_token}\nscope: {scope}\nexpires_in: {expires_in}\ntoken_type: {token_type}";
+        }
+    }
+
+    [Serializable]
+    class RefreshTokenReqBody
+    {
+        public string grant_type;
+        public string refresh_token;
+        public string client_id;
+
+        public RefreshTokenReqBody(string refresh_token, string client_id)
+        {
+            grant_type = "refresh_token";
+            this.refresh_token = refresh_token;
+            this.client_id = client_id;
+        }
+
+        // Refresh does not work as JSON
+        public WWWForm ToForm() {
+            WWWForm form = new WWWForm();
+            form.AddField("grant_type", grant_type);
+            form.AddField("refresh_token", refresh_token);
+            form.AddField("client_id", client_id);
+            return form;
+        }
+
     }
 
     [Serializable]
