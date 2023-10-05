@@ -147,6 +147,8 @@ namespace SphereOne
 
         void Start()
         {
+            SetupAuthHeader();
+
             if (_environment == Environment.EDITOR)
             {
                 // Load Mock credentials
@@ -238,8 +240,10 @@ namespace SphereOne
                 return;
 
             var credentials = JsonConvert.DeserializeObject<CredentialsWrapper>(res).data;
-
-            LoadCredentials(credentials);
+            if (!string.IsNullOrEmpty(credentials.access_token))
+            {
+                RefreshUserAuthentication(credentials);
+            }
         }
 
         // Do not rename this function without updating sphereone.jslib and/or bridge.js
@@ -407,7 +411,7 @@ namespace SphereOne
             Wallets.Clear();
             Balances.Clear();
             Nfts.Clear();
-            _headers.Clear();
+            _headers.Remove("Authorization");
 
             SPrefs.SetString(LOCAL_STORAGE_CREDENTIALS, null);
             SPrefs.SetString(LOCAL_STORAGE_STATE, null);
@@ -442,7 +446,6 @@ namespace SphereOne
                 SPrefs.SetString(LOCAL_STORAGE_CREDENTIALS, credentialsJson);
             }
 
-            SetupAuthHeader();
             FetchAllData();
         }
 
@@ -641,8 +644,6 @@ namespace SphereOne
                 return null;
             }
 
-            await CheckJwtExpiration();
-
             var body = new CreateChargeReqBodyWrapper(chargeReq, isTest);
             var bodySerialized = JsonConvert.SerializeObject(body);
 
@@ -733,10 +734,16 @@ namespace SphereOne
         void SetupAuthHeader()
         {
             _headers.Clear();
-            _headers.Add("Authorization", $"Bearer {_credentials.access_token}");
             _headers.Add("x-api-key", _apiKey);
             _headers.Add("sphere-one-source", "unity-sdk");
             _headers.Add("sphere-one-client-id", _clientId);
+        }
+
+        void RefreshUserAuthentication(Credentials credentials)
+        {
+            _credentials = credentials;
+            _headers.Remove("Authorization");
+            _headers.Add("Authorization", $"Bearer {_credentials.access_token}");
         }
 
         async Task CheckJwtExpiration()
@@ -765,10 +772,7 @@ namespace SphereOne
             var refreshCredentials = JsonConvert.DeserializeObject<Credentials>(res);
             if (!string.IsNullOrEmpty(refreshCredentials.access_token))
             {
-                _logger.Log("Successfully refreshed credentials.");
-                _credentials = refreshCredentials;
-                _headers.Remove("Authorization");
-                _headers.Add("Authorization", $"Bearer {_credentials.access_token}");
+                RefreshUserAuthentication(refreshCredentials);
             }
             else
             {
