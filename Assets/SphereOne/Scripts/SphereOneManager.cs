@@ -240,10 +240,7 @@ namespace SphereOne
                 return;
 
             var credentials = JsonConvert.DeserializeObject<CredentialsWrapper>(res).data;
-            if (!string.IsNullOrEmpty(credentials.access_token))
-            {
-                RefreshUserAuthentication(credentials);
-            }
+            LoadCredentials(credentials);
         }
 
         // Do not rename this function without updating sphereone.jslib and/or bridge.js
@@ -435,7 +432,15 @@ namespace SphereOne
             if (credentials == null)
                 return;
 
-            _credentials = credentials;
+            if (!string.IsNullOrEmpty(credentials.access_token))
+            {
+                RefreshUserAuthentication(credentials);
+            }
+            else
+            {
+                _logger.LogError("Error loading credentials");
+                return;
+            }
 
             _logger.Log($"User authenticated.");
 
