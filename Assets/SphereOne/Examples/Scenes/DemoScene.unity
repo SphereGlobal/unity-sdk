@@ -2492,7 +2492,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _apiKey
-      value: 9c16a688-7b07-4ef1-a5ef-ae7b220730c1
+      value: 5cfaf71f-4ac3-4ca6-963e-36bcb43fc1f9
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _scheme
@@ -2500,7 +2500,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _clientId
-      value: 7af3b27c-e2e9-48e6-8cd8-3136626d55a9
+      value: 8a983c52-8011-4ad4-8d8a-903a6c8dd37c
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _debugText
@@ -2516,7 +2516,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _redirectUrl
-      value: https://localhost:3000
+      value: http://localhost:3000
       objectReference: {fileID: 0}
     - target: {fileID: 2973761112392359052, guid: 7250817c851cf410592b404cbfd55364, type: 3}
       propertyPath: _clientSecret
