@@ -56,8 +56,8 @@ namespace SphereOne
         const string LOCAL_STORAGE_CREDENTIALS = "sphere_one_credentials";
         const string LOCAL_STORAGE_STATE = "sphere_one_state";
 
-        const string DOMAIN = "https://relaxed-kirch-zjpimqs5qe.projects.oryapis.com";
-        const string AUDIENCE = "https://relaxed-kirch-zjpimqs5qe.projects.oryapis.com";
+        const string DOMAIN = "https://auth.sphereone.xyz";
+        const string AUDIENCE = "https://auth.sphereone.xyz";
         const string IFRAME_URL = "https://wallet.sphereone.xyz";
 
         [SerializeField] Environment _environment = Environment.PRODUCTION;
