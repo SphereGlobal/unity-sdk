@@ -78,7 +78,10 @@ namespace SphereOne
         [Tooltip("The URL of your game. This is where the Auth Provider will redirect back to.")]
         [SerializeField] string _redirectUrl;
         [Tooltip("Redirect Scheme Identifier. Must be unique for each game. If you change this, make sure to update AndroidManifest.xml in Assets/Plugins/Android")]
+        #pragma warning disable CS0414 // Suppress the warning.
+        // This property is being set in the SphereOneManager Editor. And it is being used in `OpenPopupWindow` and `ValidateConfiguration`.
         [SerializeField] string _scheme = "sphereone";
+        #pragma warning restore CS0414
         [SerializeField] string _apiKey;
 
         public User User;
@@ -468,10 +471,14 @@ namespace SphereOne
 
         void FetchAllData()
         {
+            #pragma warning disable CS4014 // Suppress the warning.
+            // We don't want these async calls to be called synchronously. We want them to run in parallel.
+            // So, we will ignore Unity's warning about not awaiting the async calls.
             FetchUserWallets();
             FetchUserInfo();
             FetchUserNfts();
             FetchUserBalances();
+            #pragma warning restore CS4014  // Re-enable the warning
         }
 
         async Task<string> GetWrappedDek()
@@ -641,7 +648,7 @@ namespace SphereOne
         /// <param name="chargeReq"></param>
         /// <param name="isTest">Not required. Determines if API Key is test or production. By default, it is false.</param>
         /// <returns>The <see cref="ChargeResponse"/> object or null if there was an error.</returns>
-        async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false)
+        async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false, bool isDirectTransfer = false)
         {
             if (_environment == Environment.EDITOR)
             {
@@ -649,7 +656,7 @@ namespace SphereOne
                 return null;
             }
 
-            var body = new CreateChargeReqBodyWrapper(chargeReq, isTest);
+            var body = new CreateChargeReqBodyWrapper(chargeReq, isTest, isDirectTransfer);
             var bodySerialized = JsonConvert.SerializeObject(body);
 
             string url = $"{_sphereOneApiUrl}/createCharge";
@@ -823,6 +830,37 @@ namespace SphereOne
 
             }
         }
+    
+        /// <summary>
+        /// Get the estimated route for a transaction.
+        /// </summary>
+        /// <param name="transactionId"></param>
+        /// <returns>The <see cref="PayRouteEstimate"/> object or null if there was an error.</returns>
+        async public Task<PayRouteEstimate> GetRouteEstimation(string transactionId)
+        {
+            if (_environment == Environment.EDITOR)
+            {
+                // TODO fake charge mock data
+                return null;
+            }
+
+            await CheckJwtExpiration();
+
+            var requestBody = new RouteEstimationBodyWrapper(transactionId);
+            var bodySerialized = JsonConvert.SerializeObject(requestBody);
+
+            string url = $"{_sphereOneApiUrl}/pay/route";
+            var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
+
+            if (res == WebRequestHandler.REQUEST_ERR)
+                return null;
+
+            var payRouteResponse = JsonConvert.DeserializeObject<PayRouteEstimateResponse>(res).data;
+
+            _logger.Log(payRouteResponse.ToString());
+
+            return payRouteResponse;
+        }
     }
 
     [Serializable]
@@ -959,13 +997,15 @@ namespace SphereOne
     [Serializable]
     class CreateChargeReqBodyWrapper
     {
-        public CreateChargeReqBodyWrapper(ChargeReqBody chargeData, bool isTest)
+        public CreateChargeReqBodyWrapper(ChargeReqBody chargeData, bool isTest, bool isDirectTransfer)
         {
             this.isTest = isTest;
+            this.isDirectTransfer = isDirectTransfer;
             this.chargeData = chargeData;
         }
 
         public bool isTest;
+        public bool isDirectTransfer;
         public ChargeReqBody chargeData;
     }
 
@@ -973,5 +1013,16 @@ namespace SphereOne
     class CreateChargeResponseWrapper : ApiResponseWrapper
     {
         public ChargeResponse data;
+    }
+
+    [Serializable]
+    class RouteEstimationBodyWrapper
+    {
+        public RouteEstimationBodyWrapper(string data)
+        {
+            this.transactionId = data;
+        }
+
+        public string transactionId;
     }
 }

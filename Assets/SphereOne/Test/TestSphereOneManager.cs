@@ -16,7 +16,7 @@ public class TestSphereOneManager : MonoBehaviour
             {
                 name = "Your Item",
                 image = "https://your-image-url.somewhere.com",
-                amount = 3,
+                amount = 2,
                 quantity = 1,
             }
         };
@@ -25,7 +25,7 @@ public class TestSphereOneManager : MonoBehaviour
         {
             chain = SupportedChains.POLYGON,
             symbol = "MATIC",
-            amount = 3,
+            amount = 2,
             tokenAddress = "0x0000000000000000000000000000000000000000",
             items = chargeItems,
             successUrl = "https://your-website.com/success",
@@ -61,5 +61,20 @@ public class TestSphereOneManager : MonoBehaviour
         }
 
         Debug.Log(payment.ToString());
+    }
+
+    async public void GetRouteEstimation() {
+        if (_chargeId == null)
+            return;
+        
+        var routeEstimation = await SphereOneManager.Instance.GetRouteEstimation(_chargeId);
+
+        if (routeEstimation == null)
+        {
+            // Handle the error
+            return;
+        }
+
+        Debug.Log(routeEstimation.ToString());
     }
 }
