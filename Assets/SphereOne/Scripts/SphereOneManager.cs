@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using System;
 using System.Numerics;
 using System.Collections.Generic;
@@ -34,6 +35,11 @@ namespace SphereOne
 
         [DllImport("__Internal")]
         static extern void RequestCredentialFromSlideout();
+
+        [DllImport("__Internal")]
+        static extern void OpenAddPinCodePopup(string url);
+        [DllImport("__Internal")]
+        static extern void OpenPinCodePopup(string url);
 #endif
 
         public static SphereOneManager Instance { get; set; }
@@ -107,7 +113,7 @@ namespace SphereOne
 
         OpenIdConfiguration _openIdConfig;
         Credentials _credentials;
-        string _wrappedDek;
+        private string _wrappedDek;
         Dictionary<string, string> _headers;
         bool _forceRefreshCache = true;
 
@@ -252,6 +258,13 @@ namespace SphereOne
             Logout();
         }
 
+        // Do not rename this function without updating sphereone.jslib and/or bridge.js
+        void CALLBACK_SetPinCodeShare(string share)
+        {
+            // set the dek with the share returned by the PinCodePopup
+            _wrappedDek = share;
+        }
+
         /// <summary>
         /// Login the user by opening the auth popup window or toggling the slideout.
         /// </summary>
@@ -322,7 +335,26 @@ namespace SphereOne
 #elif UNITY_ANDROID
             AndroidChromeCustomTab.LaunchUrl(authorizationUrl);
 #endif
+        }
 
+        void AddPinCode()
+        {
+            if (!IsAuthenticated) return;
+#if UNITY_WEBGL
+            var accessToken = _credentials.access_token;
+            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}";
+            OpenAddPinCodePopup(url);
+#endif
+        }
+
+        async void OpenPinCode(string chargeId)
+        {
+            if (!IsAuthenticated) return;
+#if UNITY_WEBGL
+            var accessToken = _credentials.access_token;
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}";
+            OpenPinCodePopup(url);
+#endif
         }
 
         // iOS and macos (uses ASWebAuthenticationSession under the hood), windows runs a local server and waits for a callback 
@@ -415,6 +447,7 @@ namespace SphereOne
 
             SPrefs.SetString(LOCAL_STORAGE_CREDENTIALS, null);
             SPrefs.SetString(LOCAL_STORAGE_STATE, null);
+            _wrappedDek = null;
         }
 
         void TryLoadTokenFromLocalStorage()
@@ -687,10 +720,23 @@ namespace SphereOne
 
             await CheckJwtExpiration();
 
-            var dek = await GetWrappedDek();
+            var dek = _wrappedDek;
 
             if (dek == null)
+            {
+                // check if user has set up PinCode
+                if (!CheckIfPinCodeExists())
+                {
+                    // if not, open PinCode popup
+                    AddPinCode();
+                }
+                else
+                {
+                    // if yes, open PinCode popup
+                    OpenPinCode(transactionId);
+                }
                 return null;
+            }
 
             var body = new PayChargeReqBody(dek, transactionId);
             var bodySerialized = JsonConvert.SerializeObject(body);
@@ -704,6 +750,9 @@ namespace SphereOne
             var payResponse = JsonConvert.DeserializeObject<PayResponseWrapper>(res).data;
 
             _logger.Log(payResponse.ToString());
+
+            // after done, delete it
+            _wrappedDek = null;
 
             return payResponse;
         }
@@ -840,7 +889,7 @@ namespace SphereOne
         {
             if (_environment == Environment.EDITOR)
             {
-                // TODO fake charge mock data
+                // TODO fake route estimation mock data
                 return null;
             }
 
@@ -860,6 +909,15 @@ namespace SphereOne
             _logger.Log(payRouteResponse.ToString());
 
             return payRouteResponse;
+        }
+
+        /// <summary>
+        /// Checks if user has a PIN already setup.
+        /// </summary>
+        /// <returns><see cref="bool"/></returns>
+        public bool CheckIfPinCodeExists()
+        {
+            return User.isPinCodeSetup == true;
         }
     }
 
@@ -1024,5 +1082,16 @@ namespace SphereOne
         }
 
         public string transactionId;
+    }
+
+    [Serializable]
+    class PinCodeReqBodyWrapper
+    {
+        public PinCodeReqBodyWrapper(string pin)
+        {
+            this.pinCode = pin;
+        }
+
+        public string pinCode;
     }
 }

@@ -85,6 +85,7 @@ namespace SphereOne
         public string countryCode;
         public string countryFlag;
         public bool isMerchant;
+        public bool isPinCodeSetup;
     }
 
     [Serializable]
@@ -540,5 +541,11 @@ namespace SphereOne
         {
             return $"toAmount: {toAmount}\ntoAddress: {toAddress}\ntoChain: {toChain}\ntoToken: {toToken.ToString()}";
         }
+    }
+
+    public class PinCodeSetupResponse
+    {
+        public string data;
+        public string error;
     }
 }

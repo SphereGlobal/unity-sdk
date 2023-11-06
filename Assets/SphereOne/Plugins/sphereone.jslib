@@ -52,6 +52,34 @@ var plugin = {
   RequestCredentialFromSlideout: function () {
     window.bridge.requestCredentialFromSlideout();
   },
+
+  OpenAddPinCodePopup: function (url) {
+    const width = 450;
+    const height = 350;
+    const left = (window.innerWidth - width) / 2 + window.screenX;
+    const top = (window.innerHeight - height) / 2 + window.screenY;
+    const options = `width=${width},height=${height},top=${top},left=${left}`;
+
+    const popup = window.open(
+      UTF8ToString(url),
+      'Add Pin Code',
+      options
+    );
+  },
+
+  OpenPinCodePopup: function(url) {
+    const width = 450;
+    const height = 350;
+    const left = (window.innerWidth - width) / 2 + window.screenX;
+    const top = (window.innerHeight - height) / 2 + window.screenY;
+    const options = `width=${width},height=${height},top=${top},left=${left}`;
+
+    const popup = window.open(
+      UTF8ToString(url),
+      'Sphereone Pin Code',
+      options
+    );
+  },
 };
 
 mergeInto(LibraryManager.library, plugin);

@@ -33,7 +33,8 @@ public class TestSphereOneManager : MonoBehaviour
         };
 
         var isTest = false;
-        var charge = await SphereOneManager.Instance.CreateCharge(chargeRequest, isTest);
+        var isDirectTransfer = false;
+        var charge = await SphereOneManager.Instance.CreateCharge(chargeRequest, isTest, isDirectTransfer);
 
         if (charge == null) {
             // Handle the error
