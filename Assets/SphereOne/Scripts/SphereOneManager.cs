@@ -62,9 +62,15 @@ namespace SphereOne
         const string LOCAL_STORAGE_CREDENTIALS = "sphere_one_credentials";
         const string LOCAL_STORAGE_STATE = "sphere_one_state";
 
-        const string DOMAIN = "https://auth.sphereone.xyz";
-        const string AUDIENCE = "https://auth.sphereone.xyz";
+        // const string DOMAIN = "https://auth.sphereone.xyz";
+        const string DOMAIN = "https://auth.cryptoforgrandmas.com";
+        // const string AUDIENCE = "https://auth.sphereone.xyz";
+        const string AUDIENCE = "https://auth.cryptoforgrandmas.com";
         const string IFRAME_URL = "https://wallet.sphereone.xyz";
+
+        // const string PIN_CODE_URL = "https://pin.sphereone.xyz";
+        // const string PIN_CODE_URL = "https://sphereone-pincode.web.app";
+        const string PIN_CODE_URL = "https://not-sphereone-pincode.web.app";
 
         [SerializeField] Environment _environment = Environment.PRODUCTION;
 
@@ -78,16 +84,17 @@ namespace SphereOne
         [SerializeField] BackgroundFilter _backgroundFilter = BackgroundFilter.DARKEN;
 
         // localhost: http://127.0.0.1:5001/sphereone-testing/us-central1/api
-        [SerializeField] string _sphereOneApiUrl = "https://api-olgsdff53q-uc.a.run.app";
+        // [SerializeField] string _sphereOneApiUrl = "https://api-olgsdff53q-uc.a.run.app";
+        [SerializeField] string _sphereOneApiUrl = "https://api-g2eggt3ika-uc.a.run.app";
         [SerializeField] string _clientId;
 
         [Tooltip("The URL of your game. This is where the Auth Provider will redirect back to.")]
         [SerializeField] string _redirectUrl;
         [Tooltip("Redirect Scheme Identifier. Must be unique for each game. If you change this, make sure to update AndroidManifest.xml in Assets/Plugins/Android")]
-        #pragma warning disable CS0414 // Suppress the warning.
+#pragma warning disable CS0414 // Suppress the warning.
         // This property is being set in the SphereOneManager Editor. And it is being used in `OpenPopupWindow` and `ValidateConfiguration`.
         [SerializeField] string _scheme = "sphereone";
-        #pragma warning restore CS0414
+#pragma warning restore CS0414
         [SerializeField] string _apiKey;
 
         public User User;
@@ -214,6 +221,9 @@ namespace SphereOne
         // Do not rename this function without updating sphereone.jslib and/or bridge.js
         async void CALLBACK_PopupLoginSuccess(string callbackUrl)
         {
+            //android -> data={"data":{"code":"DEK","share":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaGFyZSI6IjgwMjNjM2U1ZmE3ODIyODQwMmFjZDMyZjI3NzYwMTZlNjllMzMyN2MzY2M3ZGI3ODNmYjk1MWZkNDk3ODM0M2NhODNkYWMyZjdmZTc2NDY4YTk1MTlkMTgwMTAyMTMzNjA4NTVmODkxNjJlMzY3ZTU5Mzg5ZWY2ZDM1OGRmMGE1NjliYmYyYjhkYzg5ODExODczZGRmZTJkOTM1NWQ0MWZmMmUyZTUwZDBlNzIzMjA4NDFmNzg0MGI5MzVkNDc3NjQ0ZiIsImV4cCI6MTY5OTM4NTc4MiwidGFyZ2V0IjoiYWlYOWF6U01zNXRFUUw2MHZ5bE4iLCJpYXQiOjE2OTkzODM5ODJ9.RwwJptotuSb1Vyy6PTlXZ7SgblTG-T6xCP3lSmxpqBo"},"error":null}
+            _logger.Log($"Received token from popup: {callbackUrl}.");
+
             if (_loginMode != LoginBehavior.POPUP) return;
 
             if (IsAuthenticated) return;
@@ -263,6 +273,7 @@ namespace SphereOne
         {
             // set the dek with the share returned by the PinCodePopup
             _wrappedDek = share;
+            _logger.Log($"CALLBACK_SetPinCodeShare -> share: {share}");
         }
 
         /// <summary>
@@ -323,7 +334,7 @@ namespace SphereOne
             // Redirect URL is the same for ios and macos, hardcoded here
             _redirectUrl = $"{_scheme}://auth";
 #elif UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            _redirectUrl = "http://localhost:8080/win-standalone/oauth2/";
+            _redirectUrl = "http://localhost:8080/win-standalone/oauth2";
 #endif
 
             var authorizationUrl = $"{_openIdConfig.authorization_endpoint}?response_type=code&client_id={_clientId}&state={state}&audience={AUDIENCE}&scope=openid%20profile%20email%20offline_access&redirect_uri={_redirectUrl}";
@@ -344,16 +355,29 @@ namespace SphereOne
             var accessToken = _credentials.access_token;
             var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}";
             OpenAddPinCodePopup(url);
+#elif UNITY_ANDROID
+            var accessToken = _credentials.access_token;
+            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}";
+            AndroidChromeCustomTab.LaunchUrl(url);
 #endif
         }
 
         async void OpenPinCode(string chargeId)
         {
             if (!IsAuthenticated) return;
-#if UNITY_WEBGL
             var accessToken = _credentials.access_token;
+#if UNITY_WEBGL
             var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}";
             OpenPinCodePopup(url);
+#elif UNITY_ANDROID
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}&platform=android&redirectUrl={_redirectUrl}";
+            AndroidChromeCustomTab.LaunchUrl(url);
+#elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}&platform=ios&redirectUrl={_redirectUrl}";
+            OpenWebAuthenticationSessionWithRedirectURL(url);
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}&platform=win&redirectUrl={_redirectUrl}";
+            OpenWebAuthenticationSessionWithRedirectURL(url);
 #endif
         }
 
@@ -504,14 +528,14 @@ namespace SphereOne
 
         void FetchAllData()
         {
-            #pragma warning disable CS4014 // Suppress the warning.
+#pragma warning disable CS4014 // Suppress the warning.
             // We don't want these async calls to be called synchronously. We want them to run in parallel.
             // So, we will ignore Unity's warning about not awaiting the async calls.
             FetchUserWallets();
             FetchUserInfo();
             FetchUserNfts();
             FetchUserBalances();
-            #pragma warning restore CS4014  // Re-enable the warning
+#pragma warning restore CS4014  // Re-enable the warning
         }
 
         async Task<string> GetWrappedDek()
@@ -680,29 +704,44 @@ namespace SphereOne
         /// </summary>
         /// <param name="chargeReq"></param>
         /// <param name="isTest">Not required. Determines if API Key is test or production. By default, it is false.</param>
+        /// <param name="isDirectTransfer">Not required. By default, it is false.</param>
         /// <returns>The <see cref="ChargeResponse"/> object or null if there was an error.</returns>
         async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false, bool isDirectTransfer = false)
         {
-            if (_environment == Environment.EDITOR)
+            try
             {
-                // TODO fake charge mock data
-                return null;
+                if (_environment == Environment.EDITOR)
+                {
+                    // TODO fake charge mock data
+                    return null;
+                }
+                // remove old wrappedDek whenever a new charge is created
+                _wrappedDek = null;
+
+                var body = new CreateChargeReqBodyWrapper(chargeReq, isTest, isDirectTransfer);
+                var bodySerialized = JsonConvert.SerializeObject(body);
+
+                string url = $"{_sphereOneApiUrl}/createCharge";
+                var response = await WebRequestHandler.Post(url, bodySerialized, _headers);
+                if (!response.IsSuccess)
+                {
+                    throw new Exception(response.Error);
+                }
+
+                var chargeResponse = JsonConvert.DeserializeObject<CreateChargeResponseWrapper>(res).data;
+                if (chargeResponse.error != null)
+                {
+                    throw new Exception(chargeResponse.error);
+                }
+                _logger.Log($"Charge Created: {chargeResponse}");
+
+                return chargeResponse;
             }
-
-            var body = new CreateChargeReqBodyWrapper(chargeReq, isTest, isDirectTransfer);
-            var bodySerialized = JsonConvert.SerializeObject(body);
-
-            string url = $"{_sphereOneApiUrl}/createCharge";
-            var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
-
-            if (res == WebRequestHandler.REQUEST_ERR)
-                return null;
-
-            var chargeResponse = JsonConvert.DeserializeObject<CreateChargeResponseWrapper>(res).data;
-
-            _logger.Log($"Charge Created: {chargeResponse}");
-
-            return chargeResponse;
+            catch (Exception e)
+            {
+                _logger.LogError($"There was an error creating your transaction, error: {e.Message}");
+                throw e;
+            }
         }
 
         /// <summary>
@@ -742,19 +781,34 @@ namespace SphereOne
             var bodySerialized = JsonConvert.SerializeObject(body);
 
             string url = $"{_sphereOneApiUrl}/pay";
-            var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
+            WebRequestResponse response = await WebRequestHandler.Post(url, bodySerialized, _headers);
 
-            if (res == WebRequestHandler.REQUEST_ERR)
-                return null;
+            if (!response.IsSuccess)
+            {
+                PayResponseOnRampLink onRampResponse = JsonConvert.DeserializeObject<PayResponseOnRampLink>(response.Error);
+                if (onRampResponse.Error.Code == "empty-balances" ||
+                    onRampResponse.Error.Code == "insufficient-balances" ||
+                    onRampResponse.Error.Message.Contains("Not sufficient funds to bridge"))
+                {
+                    string onrampLink = onRampResponse.Data?.OnrampLink;
+                    throw new PayError("insufficient balances", onrampLink);
+                }
+                else
+                {
+                    PayErrorResponse errorResponse = JsonConvert.DeserializeObject<PayErrorResponse>(response.Error);
+                    throw new Exception($"Payment failed: {errorResponse.Error.Message ?? errorResponse.Error.Code}");
+                }
+            }
+            else
+            {
+                PayResponse payResponse = JsonConvert.DeserializeObject<PayResponse>(response.Data);
+                _logger.Log(payResponse.ToString());
 
-            var payResponse = JsonConvert.DeserializeObject<PayResponseWrapper>(res).data;
+                // after done, delete it
+                _wrappedDek = null;
 
-            _logger.Log(payResponse.ToString());
-
-            // after done, delete it
-            _wrappedDek = null;
-
-            return payResponse;
+                return payResponse;
+            }
         }
 
         /// <summary>
@@ -879,7 +933,7 @@ namespace SphereOne
 
             }
         }
-    
+
         /// <summary>
         /// Get the estimated route for a transaction.
         /// </summary>
@@ -986,7 +1040,8 @@ namespace SphereOne
         public string token_type;
 
         // For Debugging, Testing
-        public override string ToString() {
+        public override string ToString()
+        {
             return $"access_token: {access_token}\nrefresh_token: {refresh_token}\nid_token: {id_token}\nscope: {scope}\nexpires_in: {expires_in}\ntoken_type: {token_type}";
         }
     }
@@ -1006,7 +1061,8 @@ namespace SphereOne
         }
 
         // Refresh does not work as JSON
-        public WWWForm ToForm() {
+        public WWWForm ToForm()
+        {
             WWWForm form = new WWWForm();
             form.AddField("grant_type", grant_type);
             form.AddField("refresh_token", refresh_token);

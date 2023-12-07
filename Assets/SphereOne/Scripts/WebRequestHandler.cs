@@ -7,117 +7,23 @@ using Newtonsoft.Json;
 
 namespace SphereOne
 {
+    public class WebRequestResponse
+    {
+        public string Data { get; set; }
+        public string Error { get; set; }
+        public bool IsSuccess { get; set; }
+
+        public WebRequestResponse(string data, string error, bool isSuccess)
+        {
+            Data = data;
+            Error = error;
+            IsSuccess = isSuccess;
+        }
+    }
+
     public static class WebRequestHandler
     {
-        public const string REQUEST_ERR = "error";
-
-        static UnityWebRequest CreateRequest(string path, RequestType type = RequestType.GET, string bodyData = null, Dictionary<string, string> headers = null)
-        {
-            var request = new UnityWebRequest(path, type.ToString());
-
-            if (bodyData != null)
-            {
-                // Raw body (json)
-                // var bodyRaw = Encoding.UTF8.GetBytes(JsonUtility.ToJson(bodyData));
-                // request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-                // request.SetRequestHeader("Content-Type", "application/json");
-
-                var bodyRaw = Encoding.UTF8.GetBytes(bodyData);
-                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-                request.SetRequestHeader("Content-Type", "application/json");
-            }
-
-            request.downloadHandler = new DownloadHandlerBuffer();
-
-
-            if (headers != null)
-            {
-                foreach (var item in headers)
-                {
-                    AttachHeader(request, item.Key, item.Value);
-                }
-            }
-
-            return request;
-        }
-
-        static UnityWebRequest CreateFormRequest(string path, RequestType type = RequestType.POST, WWWForm body = null, Dictionary<string, string> headers = null)
-        {
-            var request = new UnityWebRequest(path, type.ToString());
-            request.uploadHandler = new UploadHandlerRaw(body.data);
-            request.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            request.downloadHandler = new DownloadHandlerBuffer();
-            if (headers != null)
-            {
-                foreach (var item in headers)
-                {
-                    AttachHeader(request, item.Key, item.Value);
-                }
-            }
-            return request;
-        }
-
-        static public async Task<string> Get(string path, Dictionary<string, string> headers = null)
-        {
-            UnityWebRequest request = CreateRequest(path, RequestType.GET, null, headers);
-            var t = request.SendWebRequest();
-
-            while (!t.isDone)
-                await Task.Yield();
-
-            if (!IsResponseSuccessful(request))
-                return REQUEST_ERR;
-
-            // Success
-            return request.downloadHandler.text;
-        }
-
-        static public async Task<string> Post(string path, string bodyData, Dictionary<string, string> headers = null)
-        {
-            UnityWebRequest request = CreateRequest(path, RequestType.POST, bodyData, headers);
-            var t = request.SendWebRequest();
-
-            while (!t.isDone)
-                await Task.Yield();
-
-            if (!IsResponseSuccessful(request))
-                return REQUEST_ERR;
-
-            // Success
-            return request.downloadHandler.text;
-        }
-
-        static public async Task<string> Post(string path, WWWForm form, Dictionary<string, string> headers = null)
-        {
-            UnityWebRequest request = CreateFormRequest(path, RequestType.POST, form, headers);
-            var t = request.SendWebRequest();
-
-            while (!t.isDone)
-                await Task.Yield();
-
-            if (!IsResponseSuccessful(request, true))
-                return REQUEST_ERR;
-
-            // Success
-            return request.downloadHandler.text;
-        }
-
-        public static async Task<Texture2D> GetRemoteTexture(string url)
-        {
-            using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
-            var t = request.SendWebRequest();
-
-            while (!t.isDone)
-                await Task.Yield();
-
-            if (!IsResponseSuccessful(request))
-                return null;
-
-            // Success
-            return DownloadHandlerTexture.GetContent(request);
-        }
-
-        static bool IsResponseSuccessful(UnityWebRequest request, bool mute = false)
+        private static bool IsResponseSuccessful(UnityWebRequest request, bool mute = false)
         {
             string url = request.url;
             switch (request.result)
@@ -132,25 +38,186 @@ namespace SphereOne
                     if (!mute) Debug.LogError(url + ": HTTP Error: " + request.error + ", " + request.downloadHandler.text);
                     return false;
                 case UnityWebRequest.Result.Success:
-                    if (!mute) { /*Debug.Log(url + ":\nReceived: " + webRequest.downloadHandler.text);*/ } 
-                        return true;
+                    if (!mute) { /*Debug.Log(url + ":\nReceived: " + webRequest.downloadHandler.text);*/ }
+                    return true;
             }
 
             return false;
         }
 
-        static void AttachHeader(UnityWebRequest request, string key, string value)
+        public static async Task<WebRequestResponse> Get(string url, Dictionary<string, string> headers = null)
         {
-            request.SetRequestHeader(key, value);
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        request.SetRequestHeader(header.Key, header.Value);
+                    }
+                }
+
+                await request.SendWebRequest();
+
+                if (!IsResponseSuccessful(request))
+                {
+                    return new WebRequestResponse(null, request.error, false);
+                }
+
+                return new WebRequestResponse(request.downloadHandler.text, null, true);
+            }
+        }
+
+        public static async Task<WebRequestResponse> Post(string url, string jsonData, Dictionary<string, string> headers = null)
+        {
+            using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+            {
+                byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        request.SetRequestHeader(header.Key, header.Value);
+                    }
+                }
+
+                await request.SendWebRequest();
+
+                if (!IsResponseSuccessful(request))
+                {
+                    return new WebRequestResponse(null, request.error, false);
+                }
+
+                return new WebRequestResponse(request.downloadHandler.text, null, true);
+            }
+        }
+
+        public static async Task<WebRequestResponse> Post(string url, WWWForm formData, Dictionary<string, string> headers = null)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Post(url, formData))
+            {
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        request.SetRequestHeader(header.Key, header.Value);
+                    }
+                }
+
+                await request.SendWebRequest();
+
+                if (!IsResponseSuccessful(request))
+                {
+                    return new WebRequestResponse(null, request.error, false);
+                }
+
+                return new WebRequestResponse(request.downloadHandler.text, null, true);
+            }
+        }
+
+        public static async Task<WebRequestResponse> Put(string url, string jsonData, Dictionary<string, string> headers = null)
+        {
+            using (UnityWebRequest request = new UnityWebRequest(url, "PUT"))
+            {
+                byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonData);
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        request.SetRequestHeader(header.Key, header.Value);
+                    }
+                }
+
+                await request.SendWebRequest();
+
+                if (!IsResponseSuccessful(request))
+                {
+                    return new WebRequestResponse(null, request.error, false);
+                }
+
+                return new WebRequestResponse(request.downloadHandler.text, null, true);
+            }
+        }
+
+        public static async Task<WebRequestResponse> Put(string url, WWWForm formData, Dictionary<string, string> headers = null)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Put(url, formData))
+            {
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        request.SetRequestHeader(header.Key, header.Value);
+                    }
+                }
+
+                await request.SendWebRequest();
+
+                if (!IsResponseSuccessful(request))
+                {
+                    return new WebRequestResponse(null, request.error, false);
+                }
+
+                return new WebRequestResponse(request.downloadHandler.text, null, true);
+            }
+        }
+
+        public static async Task<WebRequestResponse> Delete(string url, Dictionary<string, string> headers = null)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Delete(url))
+            {
+                if (headers != null)
+                {
+                    foreach (var header in headers)
+                    {
+                        request.SetRequestHeader(header.Key, header.Value);
+                    }
+                }
+
+                await request.SendWebRequest();
+
+                if (!IsResponseSuccessful(request))
+                {
+                    return new WebRequestResponse(null, request.error, false);
+                }
+
+                return new WebRequestResponse(request.downloadHandler.text, null, true);
+            }
         }
     }
 
-    public enum RequestType
+    public static async Task<Texture2D> GetRemoteTexture(string url, int timeoutSeconds = 10)
     {
-        GET = 0,
-        POST = 1,
-        PATCH = 2
+        using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
+        request.timeout = timeoutSeconds;
+        var operation = request.SendWebRequest();
+
+        while (!operation.isDone)
+        {
+            if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
+            {
+                Debug.LogError($"Error while downloading texture:" request.error);
+                return null;
+            }
+
+            await Task.Yield();
+        }
+
+        if (!IsResponseSuccessful(request))
+        {
+            Debug.LogError($"Failed to download texture from {url}");
+            return new WebRequestResponse(null, request.error, false);
+        }
+
+        // Success
+        return DownloadHandlerTexture.GetContent(request);
     }
 }
-
-
