@@ -121,6 +121,7 @@ namespace SphereOne
         OpenIdConfiguration _openIdConfig;
         Credentials _credentials;
         private string _wrappedDek;
+        private long _wrappedDekExpiration;
         Dictionary<string, string> _headers;
         bool _forceRefreshCache = true;
 
@@ -540,16 +541,29 @@ namespace SphereOne
 
         async Task<string> GetWrappedDek()
         {
-            if (_wrappedDek != null)
+            if (!string.IsNullOrEmpty(_wrappedDek) && _wrappedDekExpiration * 1000 > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+            {
                 return _wrappedDek;
+            }
 
-            string url = $"{_sphereOneApiUrl}/createOrRecoverAccount";
-            var res = await WebRequestHandler.Post(url, "", _headers);
+            try
+            {
+                string url = $"{_sphereOneApiUrl}/createOrRecoverAccount";
+                WebRequestResponse res = await WebRequestHandler.Post(url, "", _headers);
 
-            if (res == WebRequestHandler.REQUEST_ERR)
-                return null;
+                if (!res.IsSuccess) throw new Exception(res.Error);
 
-            _wrappedDek = JsonConvert.DeserializeObject<WrappedDekWrapper>(res).data;
+                WrappedDekWrapper wrappedDekData = JsonConvert.DeserializeObject<WrappedDekWrapper>(res.Data).data;
+
+                long expiration = JwtUtils.GetTokenExpirationTime(wrappedDekData) * 1000; // Convert to milliseconds;
+                _wrappedDek = wrappedDekData;
+                _wrappedDekExpiration = expiration;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error fetching wrapped DEK: {ex.Message}");
+                throw ex;
+            }
 
             return _wrappedDek;
         }
@@ -568,15 +582,23 @@ namespace SphereOne
                 return LoadUser(usrJson);
             }
 
-            await CheckJwtExpiration();
+            try
+            {
+                await CheckJwtExpiration();
 
-            string url = $"{_sphereOneApiUrl}/user";
-            var res = await WebRequestHandler.Get(url, _headers);
+                string url = $"{_sphereOneApiUrl}/user";
+                WebRequestResponse res = await WebRequestHandler.Get(url, _headers);
 
-            if (res == WebRequestHandler.REQUEST_ERR)
-                return null;
+                if (!res.IsSuccess)
+                    throw new Exception(res.Error);
 
-            return LoadUser(res);
+                return LoadUser(res.Data);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error fetching user info: {ex.Message}");
+                throw ex;
+            }
         }
 
         User LoadUser(string json)
@@ -601,15 +623,23 @@ namespace SphereOne
                 return LoadWallets(MockApiDataFactory.Instance.GetMockWallets()); ;
             }
 
-            await CheckJwtExpiration();
+            try
+            {
+                await CheckJwtExpiration();
 
-            string url = $"{_sphereOneApiUrl}/user/wallets";
-            var res = await WebRequestHandler.Get(url, _headers);
+                string url = $"{_sphereOneApiUrl}/user/wallets";
+                WebRequestResponse res = await WebRequestHandler.Get(url, _headers);
 
-            if (res == WebRequestHandler.REQUEST_ERR)
-                return null;
+                if (!res.IsSuccess)
+                    throw new Exception(res.Error);
 
-            return LoadWallets(res);
+                return LoadWallets(res.Data);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error fetching user wallets: {ex.Message}");
+                throw ex;
+            }
         }
 
         List<Wallet> LoadWallets(string json)
@@ -637,15 +667,22 @@ namespace SphereOne
                 return LoadBalances(MockApiDataFactory.Instance.GetMockBalances()); ;
             }
 
-            await CheckJwtExpiration();
+            try
+            {
+                await CheckJwtExpiration();
 
-            string url = $"{_sphereOneApiUrl}/getFundsAvailable?refreshCache={_forceRefreshCache.ToString().ToLower()}";
-            var res = await WebRequestHandler.Get(url, _headers);
+                string url = $"{_sphereOneApiUrl}/getFundsAvailable?refreshCache={_forceRefreshCache.ToString().ToLower()}";
+                WebRequestResponse res = await WebRequestHandler.Get(url, _headers);
 
-            if (res == WebRequestHandler.REQUEST_ERR)
-                return null;
+                if (!res.IsSuccess) throw new Exception(res.Error);
 
-            return LoadBalances(res);
+                return LoadBalances(res.Data);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error fetching balances: {ex.Message}");
+                throw ex;
+            }
         }
 
         List<Balance> LoadBalances(string json)
@@ -674,15 +711,22 @@ namespace SphereOne
                 return LoadNfts(MockApiDataFactory.Instance.GetMockNfts()); ;
             }
 
-            await CheckJwtExpiration();
+            try
+            {
+                await CheckJwtExpiration();
 
-            string url = $"{_sphereOneApiUrl}/getNftsAvailable";
-            var res = await WebRequestHandler.Get(url, _headers);
+                string url = $"{_sphereOneApiUrl}/getNftsAvailable";
+                WebRequestResponse res = await WebRequestHandler.Get(url, _headers);
 
-            if (res == WebRequestHandler.REQUEST_ERR)
+                if (!response.IsSuccess) throw new Exception(response.Error);
+
+                return LoadNfts(res.Data);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error fetching NFTs: {ex.Message}");
                 return null;
-
-            return LoadNfts(res);
+            }
         }
 
         List<Nft> LoadNfts(string json)
@@ -751,99 +795,66 @@ namespace SphereOne
         /// <returns>The <see cref="PayResponse"/> object or null if there was an error.</returns>
         async public Task<PayResponse> PayCharge(string transactionId)
         {
-            if (_environment == Environment.EDITOR)
+            try
             {
-                // TODO fake charge mock data
-                return null;
-            }
-
-            await CheckJwtExpiration();
-
-            var dek = _wrappedDek;
-
-            if (dek == null)
-            {
-                // check if user has set up PinCode
-                if (!CheckIfPinCodeExists())
+                if (_environment == Environment.EDITOR)
                 {
-                    // if not, open PinCode popup
-                    AddPinCode();
+                    // TODO fake charge mock data
+                    return null;
+                }
+
+                await CheckJwtExpiration();
+
+                var dek = _wrappedDek;
+
+                if (dek == null)
+                {
+                    // check if user has set up PinCode
+                    throw new Exception("There was an error getting the wrapped dek");
+                }
+
+                var body = new PayChargeReqBody(dek, transactionId);
+                var bodySerialized = JsonConvert.SerializeObject(body);
+
+                string url = $"{_sphereOneApiUrl}/pay";
+                WebRequestResponse response = await WebRequestHandler.Post(url, bodySerialized, _headers);
+
+                if (!response.IsSuccess)
+                {
+                    PayResponseOnRampLink onRampResponse = JsonConvert.DeserializeObject<PayResponseOnRampLink>(response.Error);
+                    if (onRampResponse.Error.Code == "empty-balances" ||
+                        onRampResponse.Error.Code == "insufficient-balances" ||
+                        onRampResponse.Error.Message.Contains("Not sufficient funds to bridge"))
+                    {
+                        string onrampLink = onRampResponse.Data?.OnrampLink;
+                        throw new PayError("insufficient balances", onrampLink);
+                    }
+                    else
+                    {
+                        PayErrorResponse errorResponse = JsonConvert.DeserializeObject<PayErrorResponse>(response.Error);
+                        throw new Exception($"Payment failed: {errorResponse.Error.Message ?? errorResponse.Error.Code}");
+                    }
                 }
                 else
                 {
-                    // if yes, open PinCode popup
-                    OpenPinCode(transactionId);
-                }
-                return null;
-            }
+                    PayResponse payResponse = JsonConvert.DeserializeObject<PayResponse>(response.Data);
+                    _logger.Log(payResponse.ToString());
 
-            var body = new PayChargeReqBody(dek, transactionId);
-            var bodySerialized = JsonConvert.SerializeObject(body);
+                    // after done, delete it
+                    _wrappedDek = null;
 
-            string url = $"{_sphereOneApiUrl}/pay";
-            WebRequestResponse response = await WebRequestHandler.Post(url, bodySerialized, _headers);
-
-            if (!response.IsSuccess)
-            {
-                PayResponseOnRampLink onRampResponse = JsonConvert.DeserializeObject<PayResponseOnRampLink>(response.Error);
-                if (onRampResponse.Error.Code == "empty-balances" ||
-                    onRampResponse.Error.Code == "insufficient-balances" ||
-                    onRampResponse.Error.Message.Contains("Not sufficient funds to bridge"))
-                {
-                    string onrampLink = onRampResponse.Data?.OnrampLink;
-                    throw new PayError("insufficient balances", onrampLink);
-                }
-                else
-                {
-                    PayErrorResponse errorResponse = JsonConvert.DeserializeObject<PayErrorResponse>(response.Error);
-                    throw new Exception($"Payment failed: {errorResponse.Error.Message ?? errorResponse.Error.Code}");
+                    return payResponse;
                 }
             }
-            else
-            {
-                PayResponse payResponse = JsonConvert.DeserializeObject<PayResponse>(response.Data);
-                _logger.Log(payResponse.ToString());
-
-                // after done, delete it
-                _wrappedDek = null;
-
-                return payResponse;
+            catch (PayError e) {
+                _logger.LogError($"There was an error paying your transaction. User needs to perform onramp with OnrampLink in Error Response");
+                throw e;
             }
-        }
-
-        /// <summary>
-        /// Pay a <see cref="Transaction"/>
-        /// </summary>
-        /// <param name="transaction"></param>
-        /// <returns>The <see cref="PayResponse"/> object or null if there was an error.</returns>
-        async public Task<PayResponse> Pay(Transaction transaction)
-        {
-            if (_environment == Environment.EDITOR)
+            catch (Exception e)
             {
-                // TODO fake charge mock data
-                return null;
+                _logger.LogError($"There was an error paying your transaction, error: {e.Message}");
+                throw e;
             }
-
-            await CheckJwtExpiration();
-
-            var dek = await GetWrappedDek();
-
-            if (dek == null)
-                return null;
-
-            var bodySerialized = JsonConvert.SerializeObject(transaction);
-
-            string url = $"{_sphereOneApiUrl}/pay";
-            var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
-
-            if (res == WebRequestHandler.REQUEST_ERR)
-                return null;
-
-            var payResponse = JsonConvert.DeserializeObject<PayResponseWrapper>(res).data;
-
-            _logger.Log(payResponse.ToString());
-
-            return payResponse;
         }
 
         void SetupAuthHeader()
@@ -939,30 +950,49 @@ namespace SphereOne
         /// </summary>
         /// <param name="transactionId"></param>
         /// <returns>The <see cref="PayRouteEstimate"/> object or null if there was an error.</returns>
-        async public Task<PayRouteEstimate> GetRouteEstimation(string transactionId)
+        public async Task<PayRouteEstimate> GetRouteEstimation(GetRouteEstimationParams parameters)
         {
-            if (_environment == Environment.EDITOR)
+            try
             {
-                // TODO fake route estimation mock data
-                return null;
+                WebRequestResponse response = await EstimateRoute(parameters);
+                if (!response.IsSuccess)
+                {
+                    dynamic error = JsonConvert.DeserializeObject(response.Error);
+                    if (error.code == "empty-balances" || error.code == "insufficient-balances")
+                    {
+                        OnRampResponse data = JsonConvert.DeserializeObject<OnRampResponse>(response.Data);
+                        string onrampLink = data.OnrampLink;
+                        throw new RouteEstimateError(error.code, onrampLink);
+                    }
+                    else
+                    {
+                        throw new Exception($"Error: {error.message}");
+                    }
+                }
+                else
+                {
+                    PayRouteEstimate data = JsonConvert.DeserializeObject<PayRouteEstimate>(response.Data);
+                    RouteBatch[] parsedRoute = JsonConvert.DeserializeObject<RouteBatch[]>(data.estimation.route);
+                    var batches = Array.ConvertAll(parsedRoute, b => FormatBatch(b.description, b.actions));
+                    PayRouteEstimate newData = new PayRouteEstimate(data)
+                    {
+                        estimation = new PayRouteTotalEstimation(data.estimation)
+                        {
+                            routeParsed = batches
+                        }
+                    };
+                    return newData;
+                }
             }
-
-            await CheckJwtExpiration();
-
-            var requestBody = new RouteEstimationBodyWrapper(transactionId);
-            var bodySerialized = JsonConvert.SerializeObject(requestBody);
-
-            string url = $"{_sphereOneApiUrl}/pay/route";
-            var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
-
-            if (res == WebRequestHandler.REQUEST_ERR)
-                return null;
-
-            var payRouteResponse = JsonConvert.DeserializeObject<PayRouteEstimateResponse>(res).data;
-
-            _logger.Log(payRouteResponse.ToString());
-
-            return payRouteResponse;
+            catch (RouteEstimateError e) {
+                _logger.LogError($"There was an error calculating route for transaction. User needs to perform onramp with OnrampLink in Error Response before route calculation can be done.");
+                throw e;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"There was an error paying your transaction, error: {e.Message}");
+                throw e;
+            }
         }
 
         /// <summary>
@@ -972,6 +1002,58 @@ namespace SphereOne
         public bool CheckIfPinCodeExists()
         {
             return User.isPinCodeSetup == true;
+        }
+
+        /// <summary>
+        FormattedBatch FormatBatch(string title, List<RouteAction> actions)
+        {
+            FormattedBatchRender renderObj = new FormattedBatchRender
+            {
+                type = BatchType.TRANSFER,
+                title = title,
+                operations = new List<string>()
+            };
+
+            foreach (var action in actions)
+            {
+                if (action.transferData != null)
+                {
+                    renderObj.type = BatchType.TRANSFER;
+                    renderObj.operations.Add(
+                        $"- Transfer {HexToNumber(action.transferData.fromAmount.hex, action.transferData.fromToken.decimals)} {action.transferData.fromToken.symbol} in {action.transferData.fromChain}"
+                    );
+                }
+                else if (action.swapData != null)
+                {
+                    renderObj.type = BatchType.SWAP;
+                    renderObj.operations.Add(
+                        $"- Swap {HexToNumber(action.swapData.fromAmount.hex, action.swapData.fromToken.decimals)} {action.swapData.fromToken.symbol} to {HexToNumber(action.swapData.toAmount.hex, action.swapData.toToken.decimals)} {action.swapData.toToken.symbol} in {action.swapData.fromChain}"
+                    );
+                }
+                else if (action.bridgeData != null)
+                {
+                    renderObj.type = BatchType.BRIDGE;
+                    renderObj.operations.Add(
+                        $"- Bridge {HexToNumber(action.bridgeData.quote.fromAmount.hex, action.bridgeData.quote.fromToken.decimals)} {action.bridgeData.quote.fromToken.symbol} in {action.bridgeData.quote.fromToken.chain} to {HexToNumber(action.bridgeData.quote.toAmount.hex, action.bridgeData.quote.toToken.decimals)} {action.bridgeData.quote.toToken.symbol} in {action.bridgeData.quote.toToken.chain}"
+                    );
+                }
+            }
+
+            FormattedBatch formattedBatch = new FormattedBatch
+            {
+                type = renderObj.type,
+                title = renderObj.title,
+                operations = renderObj.operations.ToArray() // Convert List<string> to string[]
+            };
+
+            return formattedBatch;
+        }
+
+        string HexToNumber(string hex, int decimals)
+        {
+            BigInteger number = BigInteger.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+            decimal decimalNumber = (decimal)number / (decimal)Math.Pow(10, decimals);
+            return decimalNumber.ToString($"F{decimals}").TrimEnd('0').TrimEnd('.'); // Also remove trailing dot if it's an integer
         }
     }
 

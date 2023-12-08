@@ -21,6 +21,8 @@ namespace SphereOne
         FANTOM,
         EOSEVM,
         FLOW,
+        KLAYTN,
+        DFK,
         Unknown
     }
 
@@ -71,6 +73,14 @@ namespace SphereOne
         ERC20,
         SPL,
         Unknown
+    }
+
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum BatchType
+    {
+        TRANSFER,
+        SWAP,
+        BRIDGE
     }
 
     [Serializable]
@@ -146,7 +156,9 @@ namespace SphereOne
     {
         public ChargeItem() { }
 
-        public ChargeItem(string name, string image, double amount, double quantity, string nftUri = "", string nftContractAddress = "", SupportedChains nftChain = SupportedChains.Unknown)
+        public ChargeItem(string name, string image, double amount, double quantity,
+                          string nftUri = "", string nftContractAddress = "",
+                          SupportedChains nftChain = SupportedChains.Unknown)
         {
             this.name = name;
             this.image = image;
@@ -173,7 +185,9 @@ namespace SphereOne
     {
         public ChargeReqBody() { }
 
-        public ChargeReqBody(string tokenAddress, string symbol, List<ChargeItem> items, SupportedChains chain, string successUrl, string cancelUrl, double amount = 0.0, string toAddress = null)
+        public ChargeReqBody(string tokenAddress, string symbol, List<ChargeItem> items,
+                            SupportedChains chain, string successUrl, string cancelUrl,
+                            double amount = 0.0, string toAddress = null)
         {
             this.tokenAddress = tokenAddress;
             this.symbol = symbol;
@@ -211,7 +225,7 @@ namespace SphereOne
 
     [Serializable]
     public class ChainWallets : Dictionary<SupportedChains, Wallet>
-    {}
+    { }
 
     [Serializable]
     public class BridgeQuote
@@ -219,24 +233,26 @@ namespace SphereOne
         public object rawQuote; // 'any' in TypeScript is similar to 'object' in C#
         public BridgeServices service;
         public SupportedChains fromChain;
-        public BigInteger fromAmount; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj fromAmount; // Assuming BigNumber maps to BigInteger
         public string fromAddress;
         public TokenMetadata fromToken;
         public SupportedChains toChain;
-        public BigInteger toAmount; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj toAmount; // Assuming BigNumber maps to BigInteger
         public string toAddress;
         public TokenMetadata toToken;
         public double estimatedTime; // Assuming number maps to double
         public double estimatedCostUSD; // Assuming number maps to double
-        public BigInteger estimatedEthGas; // Assuming BigNumber maps to BigInteger
-        public BigInteger estimatedMatGas; // Assuming BigNumber maps to BigInteger
-        public BigInteger estimatedAvaxGas; // Assuming BigNumber maps to BigInteger
-        public BigInteger estimatedArbGas; // Assuming BigNumber maps to BigInteger
-        public BigInteger estimatedBscGas; // Assuming BigNumber maps to BigInteger
-        public BigInteger estimatedSolGas; // Assuming BigNumber maps to BigInteger
-        public BigInteger estimatedOptGas; // Assuming BigNumber maps to BigInteger
-        public BigInteger estimatedEosEvmGas; // Assuming BigNumber maps to BigInteger
-        public BigInteger estimatedBaseGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedEthGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedMatGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedAvaxGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedArbGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedBscGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedSolGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedOptGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedEosEvmGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedBaseGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedKlaytnGas; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj estimatedDfkGas; // Assuming BigNumber maps to BigInteger
         public string bridgeId; // Can be null due to the '' in TypeScript
         public string depositAddress; // Can be null due to the '' in TypeScript
     }
@@ -280,13 +296,13 @@ namespace SphereOne
     public class SwapData
     {
         public SupportedChains fromChain;
-        public BigInteger fromAmount;
+        public BigNumberObj fromAmount;
         public TokenMetadata fromToken;
         public string fromAddress;
         public string fromPrivateKey;
-        public BigInteger toAmount;
+        public BigNumberObj toAmount;
         public TokenMetadata toToken;
-        public BigInteger estimatedGas;
+        public BigNumberObj estimatedGas;
     }
 
     [Serializable]
@@ -297,8 +313,8 @@ namespace SphereOne
         public string fromAddress;
         public TokenMetadata fromToken;
         public TokenMetadata toToken;
-        public BigInteger toAmount;
-        public BigInteger fromAmount;
+        public BigNumberObj toAmount;
+        public BigNumberObj fromAmount;
         public string userOperationHash; // Only valid for smart wallets (is used for retrieving the Tx Hash after bundlers execution)
         public string approveTxHash; // always null for solana
         public string swapTxHash;
@@ -312,7 +328,7 @@ namespace SphereOne
     public class TransferData
     {
         public SupportedChains fromChain;
-        public BigInteger fromAmount; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj fromAmount; // Assuming BigNumber maps to BigInteger
         public string fromAddress;
         public string fromPrivateKey;
         public TokenMetadata fromToken;
@@ -325,7 +341,7 @@ namespace SphereOne
     public class TransferResponseData
     {
         public SupportedChains fromChain;
-        public BigInteger fromAmount; // Assuming BigNumber maps to BigInteger
+        public BigNumberObj fromAmount; // Assuming BigNumber maps to BigInteger
         public string fromAddress;
         public string fromTokenAddress;
         public string toAddress;
@@ -334,7 +350,7 @@ namespace SphereOne
         public string fromPrivateKey;
         public TransferType transferType;
         public TxStatus status;
-        public BigInteger fee; // Nullable, assuming BigNumber maps to BigInteger
+        public BigNumberObj fee; // Nullable, assuming BigNumber maps to BigInteger
         public object rawRecipient; // 'any' in TypeScript is similar to 'object' in C#
         public bool sponsoredFee;
     }
@@ -351,15 +367,17 @@ namespace SphereOne
     {
         public int time; // minutes
         public double costUsd;
-        public BigInteger ethGas;
-        public BigInteger maticGas;
-        public BigInteger optGas;
-        public BigInteger avaxGas;
-        public BigInteger arbGas;
-        public BigInteger bscGas;
-        public BigInteger solGas;
-        public BigInteger eosEvmGas;
-        public BigInteger baseGas;
+        public BigNumberObj ethGas;
+        public BigNumberObj maticGas;
+        public BigNumberObj optGas;
+        public BigNumberObj avaxGas;
+        public BigNumberObj arbGas;
+        public BigNumberObj bscGas;
+        public BigNumberObj solGas;
+        public BigNumberObj eosEvmGas;
+        public BigNumberObj baseGas;
+        public BigNumberObj klaytnGas;
+        public BigNumberObj dfkGas;
     }
 
     [Serializable]
@@ -413,7 +431,8 @@ namespace SphereOne
     {
         public Transaction() { }
 
-        public Transaction(string toAddress, SupportedChains chain, string symbol, double amount, string tokenAddress)
+        public Transaction(string toAddress, SupportedChains chain, string symbol,
+                            double amount, string tokenAddress)
         {
             this.toAddress = toAddress;
             this.chain = chain;
@@ -444,13 +463,15 @@ namespace SphereOne
     }
 
     [Serializable]
-    public class OnRampResponse {
+    public class OnRampResponse
+    {
         public TxStatus status;
         public string onrampLink;
     }
 
     [Serializable]
-    public class RouteResponse {
+    public class RouteResponse
+    {
         public TxStatus status;
         public Route route;
     }
@@ -463,7 +484,8 @@ namespace SphereOne
     }
 
     [Serializable]
-    public class PayResponseOnRampLink {
+    public class PayResponseOnRampLink
+    {
         public GenericErrorPayload error;
         public OnRampResponse data;
     }
@@ -475,6 +497,7 @@ namespace SphereOne
         public RouteResponse data;
     }
 
+    [Serializable]
     public class PayException : Exception
     {
         public string name { get; } // Immutable after construction
@@ -482,34 +505,63 @@ namespace SphereOne
         // Constructors in C# can't have named arguments by default, so we use a normal constructor with an optional parameter.
 
         // Calls the base class constructor with the "message" argument
-        public PayException(string message, string onrampLink = null): base(message)
+        public PayException(string message, string onrampLink = null) : base(message)
         {
             this.name = "Pay Error";
             this.onrampLink = onrampLink;
         }
     }
 
+    [Serializable]
     public class GenericErrorCodeResponse
     {
         public string code;
         public string message;
     }
 
+    [Serializable]
     public class PayRouteEstimateResponse
     {
-       public PayRouteEstimate data;
-       public GenericErrorCodeResponse error;
+        public PayRouteEstimate data;
+        public GenericErrorCodeResponse error;
     }
 
+    [Serializable]
     public class PayRouteEstimate
     {
-        public string txId; // transactionId
-        public TxStatus status; // TxStatus
-        public decimal total; // total amount
-        public PayRouteTotalEstimation estimation;
-        public PayRouteDestinationEstimate to;
-        public long startTimestamp; // timestamp
-        public long limitTimestamp; // timestamp
+        public string txId { get; set; }; // transactionId
+        public TxStatus status { get; set; }; // TxStatus
+        public decimal total { get; set; }; // total amount initially received, not including other costs
+        public decimal totalUsd { get; set; }; // total amount initially received, in USD, not including other costs
+        public PayRouteTotalEstimation estimation { get; set; };
+        public PayRouteDestinationEstimate to { get; set; };
+        public long startTimestamp { get; set; }; // timestamp
+        public long limitTimestamp { get; set; }; // timestamp
+
+        public PayRouteEstimate(string txId, TxStatus status, decimal total, decimal totalUsd, PayRouteTotalEstimation estimation,
+            PayRouteDestinationEstimate to, long startTimestamp, long limitTimestamp)
+        {
+            this.txId = txId;
+            this.status = status;
+            this.total = total;
+            this.totalUsd = totalUsd;
+            this.estimation = estimation;
+            this.to = to;
+            this.startTimestamp = startTimestamp;
+            this.limitTimestamp = limitTimestamp;
+        }
+
+        public PayRouteEstimate(PayRouteEstimate newData)
+        {
+            this.txId = newData.txId;
+            this.status = newData.status;
+            this.total = newData.total;
+            this.totalUsd = newData.totalUsd;
+            this.estimation = newData.estimation;
+            this.to = newData.to;
+            this.startTimestamp = newData.startTimestamp;
+            this.limitTimestamp = newData.limitTimestamp;
+        }
 
         public override string ToString()
         {
@@ -517,12 +569,34 @@ namespace SphereOne
         }
     }
 
+    [Serializable]
     public class PayRouteTotalEstimation
     {
-        public decimal costUsd; // cost in USD
-        public int timeEstimate; // in minutes
-        public string gas; // gas for the transaction
+        public decimal costUsd { get; set; }; // cost in USD
+        public int timeEstimate { get; set; }; // in minutes
+        public string gas { get; set; }; // gas for the transaction
         public string route; // the route batches
+        public string routeParsedString { get; set; }; // the route batches that will be executed
+
+        public FormattedBatch[] routeParsed { get; set; }; // the route batches that will be executed
+
+        public PayRouteTotalEstimation(decimal costUsd, int timeEstimate, string gas, string route, FormattedBatch[] routeParsed = null)
+        {
+            this.costUsd = costUsd;
+            this.timeEstimate = timeEstimate;
+            this.gas = gas;
+            this.route = route;
+            this.routeParsed = routeParsed;
+        }
+
+        public PayRouteTotalEstimation(PayRouteTotalEstimation newData)
+        {
+            this.costUsd = newData.costUsd;
+            this.timeEstimate = newData.timeEstimate;
+            this.gas = newData.gas;
+            this.route = newData.route;
+            this.routeParsed = newData.routeParsed;
+        }
 
         public override string ToString()
         {
@@ -530,6 +604,7 @@ namespace SphereOne
         }
     }
 
+    [Serializable]
     public class PayRouteDestinationEstimate
     {
         public string toAmount; // amount to be received
@@ -543,9 +618,97 @@ namespace SphereOne
         }
     }
 
+    [Serializable]
     public class PinCodeSetupResponse
     {
         public string data;
         public string error;
+    }
+
+    [Serializable]
+    public class FormattedBatch
+    {
+        public BatchType type { get; set; };
+        public string title { get; set; };
+        public string[] operations { get; set; };
+
+        public FormattedBatch(BatchType type, string title, string[] operations)
+        {
+            this.type = type;
+            this.title = title;
+            this.operations = operations;
+        }
+
+        public FormattedBatch(FormattedBatch newData)
+        {
+            this.type = newData.type;
+            this.title = newData.title;
+            this.operations = newData.operations;
+        }
+
+        public override string ToString()
+        {
+            return $"type: {type}\ntitle: {title}\noperations: {operations}";
+        }
+    }
+
+    public class FormattedBatchRender
+    {
+        public BatchType type { get; set; };
+        public string title { get; set; };
+        public List<string> operations { get; set; };
+    }
+
+    [Serializable]
+    public class ParsedRoute
+    {
+        public string id;
+        public List<RouteBatch> batches;
+        public string status;
+        public TokenMetadata toToken;
+        public string toAddress;
+        public string toChain;
+        public string toAmount;
+        public Estimate estimate;
+        public string fromUid;
+    }
+
+    public class HandleCallback
+    {
+        public Action<object[]> SuccessCallback { get; set; }
+        public Action<object[]> FailCallback { get; set; }
+        public Action<object[]> CancelCallback { get; set; }
+    }
+
+    public class PayError : Exception
+    {
+        public string OnrampLink { get; private set; }
+
+        public PayError(string message, string onrampLink = null) : base(message)
+        {
+            this.Name = "PayError";
+            this.OnrampLink = onrampLink;
+        }
+
+        // The 'Name' property is provided by the base 'Exception' class, so it's not necessary to declare it here.
+        // In C#, the 'Name' property of an exception is typically 'GetType().Name', which would return "PayError" for this class.
+    }
+
+    public class RouteEstimateError : Exception
+    {
+        public string OnrampLink { get; private set; }
+
+        public RouteEstimateError(string message, string onrampLink = null) : base(message)
+        {
+            this.Name = "RouteEstimateError";
+            this.OnrampLink = onrampLink;
+        }
+    }
+
+    [Serializable]
+    public class BigNumberObj
+    {
+        public string hex { get; set; };
+        public string type { get; set; };
     }
 }

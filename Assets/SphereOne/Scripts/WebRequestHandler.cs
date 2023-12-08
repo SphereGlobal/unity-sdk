@@ -38,7 +38,7 @@ namespace SphereOne
                     if (!mute) Debug.LogError(url + ": HTTP Error: " + request.error + ", " + request.downloadHandler.text);
                     return false;
                 case UnityWebRequest.Result.Success:
-                    if (!mute) { /*Debug.Log(url + ":\nReceived: " + webRequest.downloadHandler.text);*/ }
+                    if (!mute) Debug.Log(url + ":\nReceived: " + request.downloadHandler.text);
                     return true;
             }
 
@@ -59,12 +59,11 @@ namespace SphereOne
 
                 await request.SendWebRequest();
 
-                if (!IsResponseSuccessful(request))
-                {
-                    return new WebRequestResponse(null, request.error, false);
-                }
+                bool isSuccess = IsResponseSuccessful(request);
+                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
+                string error = isSuccess ? null : request.error;
 
-                return new WebRequestResponse(request.downloadHandler.text, null, true);
+                return new WebRequestResponse(responseData, error, isSuccess);
             }
         }
 
@@ -87,12 +86,11 @@ namespace SphereOne
 
                 await request.SendWebRequest();
 
-                if (!IsResponseSuccessful(request))
-                {
-                    return new WebRequestResponse(null, request.error, false);
-                }
+                bool isSuccess = IsResponseSuccessful(request);
+                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
+                string error = isSuccess ? null : request.error;
 
-                return new WebRequestResponse(request.downloadHandler.text, null, true);
+                return new WebRequestResponse(responseData, error, isSuccess);
             }
         }
 
@@ -110,12 +108,11 @@ namespace SphereOne
 
                 await request.SendWebRequest();
 
-                if (!IsResponseSuccessful(request))
-                {
-                    return new WebRequestResponse(null, request.error, false);
-                }
+                bool isSuccess = IsResponseSuccessful(request);
+                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
+                string error = isSuccess ? null : request.error;
 
-                return new WebRequestResponse(request.downloadHandler.text, null, true);
+                return new WebRequestResponse(responseData, error, isSuccess);
             }
         }
 
@@ -138,12 +135,11 @@ namespace SphereOne
 
                 await request.SendWebRequest();
 
-                if (!IsResponseSuccessful(request))
-                {
-                    return new WebRequestResponse(null, request.error, false);
-                }
+                bool isSuccess = IsResponseSuccessful(request);
+                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
+                string error = isSuccess ? null : request.error;
 
-                return new WebRequestResponse(request.downloadHandler.text, null, true);
+                return new WebRequestResponse(responseData, error, isSuccess);
             }
         }
 
@@ -161,12 +157,11 @@ namespace SphereOne
 
                 await request.SendWebRequest();
 
-                if (!IsResponseSuccessful(request))
-                {
-                    return new WebRequestResponse(null, request.error, false);
-                }
+                bool isSuccess = IsResponseSuccessful(request);
+                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
+                string error = isSuccess ? null : request.error;
 
-                return new WebRequestResponse(request.downloadHandler.text, null, true);
+                return new WebRequestResponse(responseData, error, isSuccess);
             }
         }
 
@@ -184,40 +179,39 @@ namespace SphereOne
 
                 await request.SendWebRequest();
 
-                if (!IsResponseSuccessful(request))
+                bool isSuccess = IsResponseSuccessful(request);
+                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
+                string error = isSuccess ? null : request.error;
+
+                return new WebRequestResponse(responseData, error, isSuccess);
+            }
+        }
+
+        public static async Task<Texture2D> GetRemoteTexture(string url, int timeoutSeconds = 10)
+        {
+            using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
+            request.timeout = timeoutSeconds;
+            var operation = request.SendWebRequest();
+
+            while (!operation.isDone)
+            {
+                if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
                 {
-                    return new WebRequestResponse(null, request.error, false);
+                    Debug.LogError($"Error while downloading texture:" request.error);
+                    return null;
                 }
 
-                return new WebRequestResponse(request.downloadHandler.text, null, true);
+                await Task.Yield();
             }
-        }
-    }
 
-    public static async Task<Texture2D> GetRemoteTexture(string url, int timeoutSeconds = 10)
-    {
-        using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
-        request.timeout = timeoutSeconds;
-        var operation = request.SendWebRequest();
-
-        while (!operation.isDone)
-        {
-            if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
+            if (!IsResponseSuccessful(request))
             {
-                Debug.LogError($"Error while downloading texture:" request.error);
-                return null;
+                Debug.LogError($"Failed to download texture from {url}");
+                return new WebRequestResponse(null, request.error, false);
             }
 
-            await Task.Yield();
+            // Success
+            return DownloadHandlerTexture.GetContent(request);
         }
-
-        if (!IsResponseSuccessful(request))
-        {
-            Debug.LogError($"Failed to download texture from {url}");
-            return new WebRequestResponse(null, request.error, false);
-        }
-
-        // Success
-        return DownloadHandlerTexture.GetContent(request);
     }
 }
