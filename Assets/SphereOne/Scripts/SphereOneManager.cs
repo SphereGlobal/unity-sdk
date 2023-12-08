@@ -69,8 +69,7 @@ namespace SphereOne
         const string IFRAME_URL = "https://wallet.sphereone.xyz";
 
         // const string PIN_CODE_URL = "https://pin.sphereone.xyz";
-        // const string PIN_CODE_URL = "https://sphereone-pincode.web.app";
-        const string PIN_CODE_URL = "https://not-sphereone-pincode.web.app";
+        const string PIN_CODE_URL = "https://sphereone-pincode.web.app";
 
         [SerializeField] Environment _environment = Environment.PRODUCTION;
 
@@ -270,11 +269,16 @@ namespace SphereOne
         }
 
         // Do not rename this function without updating sphereone.jslib and/or bridge.js
+        /// <summary>
+        /// This function is called by the PinCodePopup when the user has successfully entered their pin code.
+        /// And it's only for WebGL build
+        /// </summary>
+        /// <param name="share"></param>
         void CALLBACK_SetPinCodeShare(string share)
         {
-            // set the dek with the share returned by the PinCodePopup
-            _wrappedDek = share;
             _logger.Log($"CALLBACK_SetPinCodeShare -> share: {share}");
+            // set the dek with the tokenized share returned by the PinCodePopup
+            _wrappedDek = share;
         }
 
         /// <summary>
@@ -352,32 +356,70 @@ namespace SphereOne
         void AddPinCode()
         {
             if (!IsAuthenticated) return;
-#if UNITY_WEBGL
             var accessToken = _credentials.access_token;
-            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}";
+#if UNITY_WEBGL
+            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}&redirectUrl={_redirectUrl}";
             OpenAddPinCodePopup(url);
 #elif UNITY_ANDROID
-            var accessToken = _credentials.access_token;
-            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}";
+            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}&platform=android&redirectUrl={_redirectUrl}";
             AndroidChromeCustomTab.LaunchUrl(url);
+#elif UNITY_IOS
+            // Code specific to iOS (both iPhone and iPad)
+            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}&platform=ios&redirectUrl={_redirectUrl}";
+            OpenWebAuthenticationSessionWithRedirectURL(url);
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+            // Code specific to running in the Unity Editor on macOS or standalone macOS build
+            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}&platform=mac&redirectUrl={_redirectUrl}";
+            OpenWebAuthenticationSessionWithRedirectURL(url);
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}&platform=win&redirectUrl={_redirectUrl}";
+            OpenWebAuthenticationSessionWithRedirectURL(url);
 #endif
         }
 
-        async void OpenPinCode(string chargeId)
+        /// <summary>
+        /// Opens a pin code entry interface for the user. The specific action taken by the pin code
+        /// interface is determined by the target parameter, which should correspond to one of the
+        /// predefined actions in <see cref="PincodeTargets"/>.
+        /// </summary>
+        /// <param name="target">The pin code target action as a string. Defaults to <see cref="PincodeTargets.SendNft"/>,
+        /// which represents the action to send an NFT.</param>
+        /// <remarks>
+        /// <para>Scenarios:</para>
+        /// <list type="bullet">
+        /// <item>
+        /// <description>If the user wants to make a payment and needs to enter their PIN, call <c>OpenPinCode("the-charge-id")</c>.</description>
+        /// </item>
+        /// <item>
+        /// <description>If the user wants to send an NFT, call <c>OpenPinCode(PincodeTargets.SendNft)</c>.</description>
+        /// </item>
+        /// <item>
+        /// <description>If the user wants to add a custodial wallet (with ReadOnly access), call <c>OpenPinCode(PincodeTargets.AddWallet)</c>.</description>
+        /// </item>
+        /// </list>
+        /// <para>This method is platform-dependent and will open the appropriate pin code entry interface
+        /// based on the current platform (WebGL, Android, iOS, macOS, Windows).</para>
+        /// </remarks>
+        async void OpenPinCode(string target = PincodeTargets.SendNft)
         {
             if (!IsAuthenticated) return;
             var accessToken = _credentials.access_token;
 #if UNITY_WEBGL
-            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}";
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&target={target}";
             OpenPinCodePopup(url);
 #elif UNITY_ANDROID
-            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}&platform=android&redirectUrl={_redirectUrl}";
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&target={target}&platform=android&redirectUrl={_redirectUrl}";
             AndroidChromeCustomTab.LaunchUrl(url);
-#elif UNITY_IOS || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}&platform=ios&redirectUrl={_redirectUrl}";
+#elif UNITY_IOS
+            // Code specific to iOS (both iPhone and iPad)
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&target={target}&platform=ios&redirectUrl={_redirectUrl}";
+            OpenWebAuthenticationSessionWithRedirectURL(url);
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+             // Code specific to running in the Unity Editor on macOS or standalone macOS build
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&target={target}&platform=mac&redirectUrl={_redirectUrl}";
             OpenWebAuthenticationSessionWithRedirectURL(url);
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&chargeId={chargeId}&platform=win&redirectUrl={_redirectUrl}";
+            var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&target={target}&platform=win&redirectUrl={_redirectUrl}";
             OpenWebAuthenticationSessionWithRedirectURL(url);
 #endif
         }
@@ -568,7 +610,68 @@ namespace SphereOne
             return _wrappedDek;
         }
 
-        // API functions
+        /// <summary>
+        /// Checks if user has a PIN already setup.
+        /// </summary>
+        /// <returns><see cref="bool"/></returns>
+        public bool CheckIfPinCodeExists()
+        {
+            return User.isPinCodeSetup == true;
+        }
+
+        /// <summary>
+        FormattedBatch FormatBatch(string title, List<RouteAction> actions)
+        {
+            FormattedBatchRender renderObj = new FormattedBatchRender
+            {
+                type = BatchType.TRANSFER,
+                title = title,
+                operations = new List<string>()
+            };
+
+            foreach (var action in actions)
+            {
+                if (action.transferData != null)
+                {
+                    renderObj.type = BatchType.TRANSFER;
+                    renderObj.operations.Add(
+                        $"- Transfer {HexToNumber(action.transferData.fromAmount.hex, action.transferData.fromToken.decimals)} {action.transferData.fromToken.symbol} in {action.transferData.fromChain}"
+                    );
+                }
+                else if (action.swapData != null)
+                {
+                    renderObj.type = BatchType.SWAP;
+                    renderObj.operations.Add(
+                        $"- Swap {HexToNumber(action.swapData.fromAmount.hex, action.swapData.fromToken.decimals)} {action.swapData.fromToken.symbol} to {HexToNumber(action.swapData.toAmount.hex, action.swapData.toToken.decimals)} {action.swapData.toToken.symbol} in {action.swapData.fromChain}"
+                    );
+                }
+                else if (action.bridgeData != null)
+                {
+                    renderObj.type = BatchType.BRIDGE;
+                    renderObj.operations.Add(
+                        $"- Bridge {HexToNumber(action.bridgeData.quote.fromAmount.hex, action.bridgeData.quote.fromToken.decimals)} {action.bridgeData.quote.fromToken.symbol} in {action.bridgeData.quote.fromToken.chain} to {HexToNumber(action.bridgeData.quote.toAmount.hex, action.bridgeData.quote.toToken.decimals)} {action.bridgeData.quote.toToken.symbol} in {action.bridgeData.quote.toToken.chain}"
+                    );
+                }
+            }
+
+            FormattedBatch formattedBatch = new FormattedBatch
+            {
+                type = renderObj.type,
+                title = renderObj.title,
+                operations = renderObj.operations.ToArray() // Convert List<string> to string[]
+            };
+
+            return formattedBatch;
+        }
+
+        string HexToNumber(string hex, int decimals)
+        {
+            BigInteger number = BigInteger.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+            decimal decimalNumber = (decimal)number / (decimal)Math.Pow(10, decimals);
+            return decimalNumber.ToString($"F{decimals}").TrimEnd('0').TrimEnd('.'); // Also remove trailing dot if it's an integer
+        }
+
+        #region API functions
 
         /// <summary>
         /// Fetch the most recent User Info.
@@ -809,7 +912,6 @@ namespace SphereOne
 
                 if (dek == null)
                 {
-                    // check if user has set up PinCode
                     throw new Exception("There was an error getting the wrapped dek");
                 }
 
@@ -846,7 +948,8 @@ namespace SphereOne
                     return payResponse;
                 }
             }
-            catch (PayError e) {
+            catch (PayError e)
+            {
                 _logger.LogError($"There was an error paying your transaction. User needs to perform onramp with OnrampLink in Error Response");
                 throw e;
             }
@@ -984,7 +1087,8 @@ namespace SphereOne
                     return newData;
                 }
             }
-            catch (RouteEstimateError e) {
+            catch (RouteEstimateError e)
+            {
                 _logger.LogError($"There was an error calculating route for transaction. User needs to perform onramp with OnrampLink in Error Response before route calculation can be done.");
                 throw e;
             }
@@ -995,66 +1099,54 @@ namespace SphereOne
             }
         }
 
-        /// <summary>
-        /// Checks if user has a PIN already setup.
-        /// </summary>
-        /// <returns><see cref="bool"/></returns>
-        public bool CheckIfPinCodeExists()
+        public async Task TransferNft(NftDataParams data)
         {
-            return User.isPinCodeSetup == true;
-        }
-
-        /// <summary>
-        FormattedBatch FormatBatch(string title, List<RouteAction> actions)
-        {
-            FormattedBatchRender renderObj = new FormattedBatchRender
+            try
             {
-                type = BatchType.TRANSFER,
-                title = title,
-                operations = new List<string>()
-            };
+                await CheckJwtExpiration();
 
-            foreach (var action in actions)
-            {
-                if (action.transferData != null)
+                var dek = _wrappedDek;
+                if (dek == null)
                 {
-                    renderObj.type = BatchType.TRANSFER;
-                    renderObj.operations.Add(
-                        $"- Transfer {HexToNumber(action.transferData.fromAmount.hex, action.transferData.fromToken.decimals)} {action.transferData.fromToken.symbol} in {action.transferData.fromChain}"
-                    );
+                    throw new Exception("There was an error getting the wrapped dek");
                 }
-                else if (action.swapData != null)
+
+                var bodySerialized = JsonConvert.SerializeObject(new
                 {
-                    renderObj.type = BatchType.SWAP;
-                    renderObj.operations.Add(
-                        $"- Swap {HexToNumber(action.swapData.fromAmount.hex, action.swapData.fromToken.decimals)} {action.swapData.fromToken.symbol} to {HexToNumber(action.swapData.toAmount.hex, action.swapData.toToken.decimals)} {action.swapData.toToken.symbol} in {action.swapData.fromChain}"
-                    );
+                    nftData.fromAddress,
+                    nftData.toAddress,
+                    nftData.chain,
+                    nftData.nftTokenAddress,
+                    nftData.tokenId,
+                    nftData.reason,
+                    wrappedDek = dek
+                });
+
+                string url = $"{_sphereOneApiUrl}/transferNft";
+                WebRequestResponse response = await WebRequestHandler.Post(url, bodySerialized, _headers);
+
+                if (!response.IsSuccess)
+                {
+                    throw new Exception(response.Error);
                 }
-                else if (action.bridgeData != null)
+                else
                 {
-                    renderObj.type = BatchType.BRIDGE;
-                    renderObj.operations.Add(
-                        $"- Bridge {HexToNumber(action.bridgeData.quote.fromAmount.hex, action.bridgeData.quote.fromToken.decimals)} {action.bridgeData.quote.fromToken.symbol} in {action.bridgeData.quote.fromToken.chain} to {HexToNumber(action.bridgeData.quote.toAmount.hex, action.bridgeData.quote.toToken.decimals)} {action.bridgeData.quote.toToken.symbol} in {action.bridgeData.quote.toToken.chain}"
-                    );
+                    _logger.Log($"NFT Transferred: {response.Data}");
                 }
             }
-
-            FormattedBatch formattedBatch = new FormattedBatch
+            catch (Exception e)
             {
-                type = renderObj.type,
-                title = renderObj.title,
-                operations = renderObj.operations.ToArray() // Convert List<string> to string[]
-            };
-
-            return formattedBatch;
+                _logger.LogError($"There was an error transferring your NFT, error: {e.Message}");
+                throw e;
+            }
+            finally
+            {
+                // after done, delete it
+                _wrappedDek = null;
+            }
         }
 
-        string HexToNumber(string hex, int decimals)
-        {
-            BigInteger number = BigInteger.Parse(hex, System.Globalization.NumberStyles.HexNumber);
-            decimal decimalNumber = (decimal)number / (decimal)Math.Pow(10, decimals);
-            return decimalNumber.ToString($"F{decimals}").TrimEnd('0').TrimEnd('.'); // Also remove trailing dot if it's an integer
-        }
+        #endregion
     }
 
     [Serializable]

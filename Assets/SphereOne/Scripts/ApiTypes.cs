@@ -83,6 +83,12 @@ namespace SphereOne
         BRIDGE
     }
 
+    public struct PincodeTargets
+    {
+        public const string AddWallet = "ADD_WALLET";
+        public const string SendNft = "SEND_NFT";
+    }
+
     [Serializable]
     public class User
     {
@@ -682,12 +688,12 @@ namespace SphereOne
 
     public class PayError : Exception
     {
-        public string OnrampLink { get; private set; }
+        public string onrampLink { get; private set; }
 
         public PayError(string message, string onrampLink = null) : base(message)
         {
             this.Name = "PayError";
-            this.OnrampLink = onrampLink;
+            this.onrampLink = onrampLink;
         }
 
         // The 'Name' property is provided by the base 'Exception' class, so it's not necessary to declare it here.
@@ -696,12 +702,12 @@ namespace SphereOne
 
     public class RouteEstimateError : Exception
     {
-        public string OnrampLink { get; private set; }
+        public string onrampLink { get; private set; }
 
         public RouteEstimateError(string message, string onrampLink = null) : base(message)
         {
             this.Name = "RouteEstimateError";
-            this.OnrampLink = onrampLink;
+            this.onrampLink = onrampLink;
         }
     }
 
@@ -710,5 +716,23 @@ namespace SphereOne
     {
         public string hex { get; set; };
         public string type { get; set; };
+    }
+
+    [Serializable]
+    public class TokenizedShare
+    {
+        public string DEK { get; set; };
+        public string error { get; set; };
+    }
+
+    [Serializable]
+    public class NftDataParams
+    {
+        public string fromAddress { get; set; };
+        public string toAddress { get; set; };
+        public SupportedChains chain { get; set; };
+        public string nftTokenAddress { get; set; };
+        public string tokenId { get; set; };
+        public string reason { get; set; };
     }
 }
