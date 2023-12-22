@@ -64,14 +64,13 @@ namespace SphereOne
         const string LOCAL_STORAGE_CREDENTIALS = "sphere_one_credentials";
         const string LOCAL_STORAGE_STATE = "sphere_one_state";
 
-        // const string DOMAIN = "https://auth.sphereone.xyz";
-        const string DOMAIN = "https://auth.cryptoforgrandmas.com";
-        // const string AUDIENCE = "https://auth.sphereone.xyz";
-        const string AUDIENCE = "https://auth.cryptoforgrandmas.com";
+        const string DOMAIN = "https://auth.sphereone.xyz";
+
+        const string AUDIENCE = "https://auth.sphereone.xyz";
+
         const string IFRAME_URL = "https://wallet.sphereone.xyz";
 
-        // const string PIN_CODE_URL = "https://pin.sphereone.xyz";
-        const string PIN_CODE_URL = "https://sphereone-pincode.web.app";
+        const string PIN_CODE_URL = "https://pin.sphereone.xyz";
 
         [SerializeField] Environment _environment = Environment.PRODUCTION;
 
@@ -84,10 +83,8 @@ namespace SphereOne
         [Tooltip("Filter the background when the slideout is open")]
         [SerializeField] BackgroundFilter _backgroundFilter = BackgroundFilter.DARKEN;
 
-        // localhost: http://127.0.0.1:5001/sphereone-testing/us-central1/api
         // [SerializeField] string _sphereOneApiUrl = "https://api-olgsdff53q-uc.a.run.app";
-        // [SerializeField] string _sphereOneApiUrl = "https://api-g2eggt3ika-uc.a.run.app";
-        [SerializeField] string _sphereOneApiUrl = "http://127.0.0.1:5001/sphereone-testing/us-central1/api";
+        [SerializeField] string _sphereOneApiUrl = "http://127.0.0.1:5001/spheremvp/us-central1/api";
         [SerializeField] string _clientId;
 
         [Tooltip("The URL of your game. This is where the Auth Provider will redirect back to.")]
@@ -251,7 +248,12 @@ namespace SphereOne
                 return;
 
             var code = callbackUrl.Split("code=")[1].Split("&state=")[0];
+#if UNITY_IOS
+            var iosState = callbackUrl.Split("&state=")[1];
+            var state = iosState.Split("#")[0];
+#elif UNITY_WEBGL || UNITY_ANDROID || UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             var state = callbackUrl.Split("&state=")[1];
+#endif
 
             var savedState = SPrefs.GetString(LOCAL_STORAGE_STATE);
 
@@ -383,7 +385,7 @@ namespace SphereOne
 #endif
         }
 
-        void AddPinCode()
+        public void AddPinCode()
         {
             if (!IsAuthenticated) return;
             var accessToken = _credentials.access_token;
@@ -430,7 +432,7 @@ namespace SphereOne
         /// <para>This method is platform-dependent and will open the appropriate pin code entry interface
         /// based on the current platform (WebGL, Android, iOS, macOS, Windows).</para>
         /// </remarks>
-        void OpenPinCode(string target = PincodeTargets.SendNft)
+        public void OpenPinCode(string target = PincodeTargets.SendNft)
         {
             if (!IsAuthenticated) return;
             var accessToken = _credentials.access_token;
@@ -736,6 +738,7 @@ namespace SphereOne
             }
             throw new ArgumentException("Invalid hex character: " + hexChar);
         }
+
         #region API functions
 
         /// <summary>
@@ -1137,16 +1140,16 @@ namespace SphereOne
                 WebRequestResponse response = await WebRequestHandler.Post($"{_sphereOneApiUrl}/pay/route", serializedBody, _headers);
                 if (!response.IsSuccess)
                 {
-                    OnRampErrorFormatResponse error = JsonConvert.DeserializeObject<OnRampErrorFormatResponse>(response.Error);
-                    if (error.code == "empty-balances" || error.code == "insufficient-balances")
+                    OnRampErrorFormatResponse errorRes = JsonConvert.DeserializeObject<OnRampErrorFormatResponse>(response.Data);
+                    if (errorRes.error.code == "empty-balances" || errorRes.error.code == "insufficient-balances")
                     {
-                        OnRampResponse data = JsonConvert.DeserializeObject<OnRampResponse>(response.Data);
-                        string onrampLink = data.onrampLink;
-                        throw new RouteEstimateError(error.code, onrampLink);
+                        OnRampResponse onrampData = errorRes.data;
+                        string onrampLink = onrampData.onrampLink;
+                        throw new RouteEstimateError("There was an error calculating route for transaction because user doesn't have enough funds to get a proper estimation. User needs to perform onramp with OnrampLink in Error Response.", onrampLink);
                     }
                     else
                     {
-                        throw new Exception($"Error: {error.message}");
+                        throw new Exception(errorRes.error.message);
                     }
                 }
                 else
@@ -1169,7 +1172,7 @@ namespace SphereOne
             }
             catch (RouteEstimateError e)
             {
-                _logger.LogError($"There was an error calculating route for transaction. User needs to perform onramp with OnrampLink in Error Response before route calculation can be done: {e.Message}");
+                _logger.LogError($"{e.Message}");
                 throw;
             }
             catch (Exception e)
@@ -1403,12 +1406,6 @@ namespace SphereOne
         }
 
         public string pinCode;
-    }
-
-    public class OnRampErrorFormatResponse
-    {
-        public string code { get; set; }
-        public string message { get; set; }
     }
 
     public class WrappedDekFormatResponse

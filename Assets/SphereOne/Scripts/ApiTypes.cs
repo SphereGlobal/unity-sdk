@@ -500,6 +500,11 @@ namespace SphereOne
     }
 
     [Serializable]
+    public class OnRampErrorFormatResponse : PayResponseOnRampLink
+    {
+    }
+
+    [Serializable]
     public class PayResponseRouteCreated
     {
         public GenericErrorPayload error;

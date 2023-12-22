@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using SphereOne;
 using System.Threading.Tasks;
@@ -36,11 +37,6 @@ public class TestSphereOneManager : MonoBehaviour
         var isDirectTransfer = false;
         var charge = await SphereOneManager.Instance.CreateCharge(chargeRequest, isTest, isDirectTransfer);
 
-        if (charge == null) {
-            // Handle the error
-            return;
-        }
-
         _chargeId = charge.chargeId;
 
         // Once the user has logged in
@@ -53,29 +49,74 @@ public class TestSphereOneManager : MonoBehaviour
         if (_chargeId == null)
             return;
 
-        var payment = await SphereOneManager.Instance.PayCharge(_chargeId);
-
-        if (payment == null)
+        try
         {
-            // Handle the error
+            var payment = await SphereOneManager.Instance.PayCharge(_chargeId);
+            Debug.Log(payment.ToString());
+        }
+        catch (PayError e)
+        {
+            Debug.LogError($"An error occurred while paying the charge: {e.Message}");
+            string onRampLink = e.onrampLink;
+            Debug.LogError($"onRampLink: {onRampLink}");
+            // Open the onRampLink in the user's default web browser
+            Application.OpenURL(onRampLink);
             return;
         }
-
-        Debug.Log(payment.ToString());
+        catch (Exception e)
+        {
+            Debug.LogError($"An error occurred while paying the charge: {e.Message}");
+            return;
+        }
     }
 
-    async public void GetRouteEstimation() {
+    async public void GetRouteEstimation()
+    {
         if (_chargeId == null)
             return;
-        
-        var routeEstimation = await SphereOneManager.Instance.GetRouteEstimation(_chargeId);
 
-        if (routeEstimation == null)
+        try
         {
-            // Handle the error
+            var routeEstimation = await SphereOneManager.Instance.GetRouteEstimation(_chargeId);
+            Debug.Log(routeEstimation.ToString());
+        }
+        catch (RouteEstimateError e)
+        {
+            Debug.LogError($"An error occurred while getting the route estimation: {e.Message}");
+            string onRampLink = e.onrampLink;
+            Debug.LogError($"onRampLink: {onRampLink}");
+            // Open the onRampLink in the user's default web browser
+            Application.OpenURL(onRampLink);
             return;
         }
+        catch (Exception e)
+        {
+            Debug.LogError($"An error occurred while getting the route estimation: {e.Message}");
+            return;
+        }
+    }
 
-        Debug.Log(routeEstimation.ToString());
+#pragma warning disable CS1998 // Suppress the warning.
+    // This opens a popup to enter the pin code. So, no need to await.
+    async public void OpenPinCode()
+    {
+        if (_chargeId == null)
+            return;
+        SphereOneManager.Instance.OpenPinCode(_chargeId);
+    }
+#pragma warning restore CS1998
+
+    async public void TransferNft()
+    {
+        try
+        {
+            // TODO: Implement this
+            // await SphereOneManager.Instance.TransferNft();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"An error occurred while transferring the NFT: {e.Message}");
+            return;
+        }
     }
 }
