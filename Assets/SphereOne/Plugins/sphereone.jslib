@@ -76,7 +76,7 @@ var plugin = {
 
     const popup = window.open(
       UTF8ToString(url),
-      'Sphereone Pin Code',
+      'SphereOne Pin Code',
       options
     );
   },

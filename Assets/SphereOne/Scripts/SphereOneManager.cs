@@ -1,5 +1,7 @@
 using System.Net.Mime;
 using System;
+using System.Globalization;
+using System.Linq;
 using System.Numerics;
 using System.Collections.Generic;
 using UnityEngine;
@@ -84,7 +86,8 @@ namespace SphereOne
 
         // localhost: http://127.0.0.1:5001/sphereone-testing/us-central1/api
         // [SerializeField] string _sphereOneApiUrl = "https://api-olgsdff53q-uc.a.run.app";
-        [SerializeField] string _sphereOneApiUrl = "https://api-g2eggt3ika-uc.a.run.app";
+        // [SerializeField] string _sphereOneApiUrl = "https://api-g2eggt3ika-uc.a.run.app";
+        [SerializeField] string _sphereOneApiUrl = "http://127.0.0.1:5001/sphereone-testing/us-central1/api";
         [SerializeField] string _clientId;
 
         [Tooltip("The URL of your game. This is where the Auth Provider will redirect back to.")]
@@ -228,6 +231,19 @@ namespace SphereOne
 
             if (IsAuthenticated) return;
 
+            if (callbackUrl.Contains("data="))
+            {
+                //! NOTE: THIS IS SPECIFICALLY FOR PIN CODE, NOT FOR LOGIN. JUST REUSING THE CALLBACK.
+                var data = callbackUrl.Split("data=")[1];
+                var pinResponse = JsonConvert.DeserializeObject<PinCodeFormatResponse>(data).data;
+                if (pinResponse.code.ToLower().Equals("dek"))
+                {
+                    _wrappedDek = pinResponse.share;
+                    // exit early, we don't want to load the credentials
+                    return;
+                }
+            }
+
             if (!callbackUrl.Contains("code="))
                 return;
 
@@ -253,12 +269,15 @@ namespace SphereOne
             authUrl += $"&redirectUri={_redirectUrl}";
             authUrl += $"&state={state}";
 
-            var res = await WebRequestHandler.Get(authUrl, null);
+            WebRequestResponse res = await WebRequestHandler.Get(authUrl, null);
 
-            if (res == WebRequestHandler.REQUEST_ERR)
+            if (!res.IsSuccess)
+            {
+                _logger.LogError($"Error fetching token: {res.Error}");
                 return;
+            }
 
-            var credentials = JsonConvert.DeserializeObject<CredentialsWrapper>(res).data;
+            var credentials = JsonConvert.DeserializeObject<CredentialsWrapper>(res.Data).data;
             LoadCredentials(credentials);
         }
 
@@ -277,8 +296,16 @@ namespace SphereOne
         void CALLBACK_SetPinCodeShare(string share)
         {
             _logger.Log($"CALLBACK_SetPinCodeShare -> share: {share}");
-            // set the dek with the tokenized share returned by the PinCodePopup
-            _wrappedDek = share;
+            if (share.ToLower() == "ok")
+            {
+                // user has successfully added a pin code
+                _logger.Log("User has successfully added a pin code");
+            }
+            else
+            {
+                // set the dek with the tokenized share returned by the PinCodePopup
+                _wrappedDek = share;
+            }
         }
 
         /// <summary>
@@ -314,12 +341,15 @@ namespace SphereOne
             if (_openIdConfig != null) return;
 
             string configUrl = $"{DOMAIN}/.well-known/openid-configuration";
-            var res = await WebRequestHandler.Get(configUrl, null);
+            WebRequestResponse res = await WebRequestHandler.Get(configUrl, null);
 
-            if (res == WebRequestHandler.REQUEST_ERR)
+            if (!res.IsSuccess)
+            {
+                _logger.LogError($"Error fetching OpenIdConfiguration: {res.Error}");
                 return;
+            }
 
-            _openIdConfig = JsonConvert.DeserializeObject<OpenIdConfiguration>(res);
+            _openIdConfig = JsonConvert.DeserializeObject<OpenIdConfiguration>(res.Data);
         }
 
         async void OpenPopupWindow()
@@ -400,7 +430,7 @@ namespace SphereOne
         /// <para>This method is platform-dependent and will open the appropriate pin code entry interface
         /// based on the current platform (WebGL, Android, iOS, macOS, Windows).</para>
         /// </remarks>
-        async void OpenPinCode(string target = PincodeTargets.SendNft)
+        void OpenPinCode(string target = PincodeTargets.SendNft)
         {
             if (!IsAuthenticated) return;
             var accessToken = _credentials.access_token;
@@ -505,6 +535,7 @@ namespace SphereOne
         {
             _credentials = null;
             _wrappedDek = null;
+            _wrappedDekExpiration = 0;
             User = null;
 
             Wallets.Clear();
@@ -595,7 +626,7 @@ namespace SphereOne
 
                 if (!res.IsSuccess) throw new Exception(res.Error);
 
-                WrappedDekWrapper wrappedDekData = JsonConvert.DeserializeObject<WrappedDekWrapper>(res.Data).data;
+                string wrappedDekData = JsonConvert.DeserializeObject<WrappedDekFormatResponse>(res.Data).data;
 
                 long expiration = JwtUtils.GetTokenExpirationTime(wrappedDekData) * 1000; // Convert to milliseconds;
                 _wrappedDek = wrappedDekData;
@@ -664,13 +695,47 @@ namespace SphereOne
             return formattedBatch;
         }
 
-        string HexToNumber(string hex, int decimals)
+        public string HexToNumber(string hex, int decimals)
         {
-            BigInteger number = BigInteger.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+            BigInteger number = ParseHexToBigInteger(hex);
+
+            // Convert BigInteger to decimal and adjust for decimals
             decimal decimalNumber = (decimal)number / (decimal)Math.Pow(10, decimals);
-            return decimalNumber.ToString($"F{decimals}").TrimEnd('0').TrimEnd('.'); // Also remove trailing dot if it's an integer
+            // Format the decimal number as a string
+            return decimalNumber.ToString($"F{decimals}", CultureInfo.InvariantCulture).TrimEnd('0').TrimEnd('.');
         }
 
+        private BigInteger ParseHexToBigInteger(string hex)
+        {
+            // Remove the "0x" prefix if it exists
+            hex = hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? hex.Substring(2) : hex;
+            BigInteger result = 0;
+
+            // Iterate through the string and calculate the number
+            foreach (char c in hex)
+            {
+                result = result * 16 + HexCharToInt(c);
+            }
+
+            return result;
+        }
+
+        private int HexCharToInt(char hexChar)
+        {
+            if (hexChar >= '0' && hexChar <= '9')
+            {
+                return hexChar - '0';
+            }
+            if (hexChar >= 'a' && hexChar <= 'f')
+            {
+                return hexChar - 'a' + 10;
+            }
+            if (hexChar >= 'A' && hexChar <= 'F')
+            {
+                return hexChar - 'A' + 10;
+            }
+            throw new ArgumentException("Invalid hex character: " + hexChar);
+        }
         #region API functions
 
         /// <summary>
@@ -821,7 +886,7 @@ namespace SphereOne
                 string url = $"{_sphereOneApiUrl}/getNftsAvailable";
                 WebRequestResponse res = await WebRequestHandler.Get(url, _headers);
 
-                if (!response.IsSuccess) throw new Exception(response.Error);
+                if (!res.IsSuccess) throw new Exception(res.Error);
 
                 return LoadNfts(res.Data);
             }
@@ -866,20 +931,20 @@ namespace SphereOne
                 _wrappedDek = null;
 
                 var body = new CreateChargeReqBodyWrapper(chargeReq, isTest, isDirectTransfer);
-                var bodySerialized = JsonConvert.SerializeObject(body);
+                var settings = new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                };
+                var bodySerialized = JsonConvert.SerializeObject(body, settings);
 
                 string url = $"{_sphereOneApiUrl}/createCharge";
-                var response = await WebRequestHandler.Post(url, bodySerialized, _headers);
+                WebRequestResponse response = await WebRequestHandler.Post(url, bodySerialized, _headers);
                 if (!response.IsSuccess)
                 {
                     throw new Exception(response.Error);
                 }
 
-                var chargeResponse = JsonConvert.DeserializeObject<CreateChargeResponseWrapper>(res).data;
-                if (chargeResponse.error != null)
-                {
-                    throw new Exception(chargeResponse.error);
-                }
+                ChargeResponse chargeResponse = JsonConvert.DeserializeObject<CreateChargeResponseWrapper>(response.Data).data;
                 _logger.Log($"Charge Created: {chargeResponse}");
 
                 return chargeResponse;
@@ -923,18 +988,18 @@ namespace SphereOne
 
                 if (!response.IsSuccess)
                 {
-                    PayResponseOnRampLink onRampResponse = JsonConvert.DeserializeObject<PayResponseOnRampLink>(response.Error);
-                    if (onRampResponse.Error.Code == "empty-balances" ||
-                        onRampResponse.Error.Code == "insufficient-balances" ||
-                        onRampResponse.Error.Message.Contains("Not sufficient funds to bridge"))
+                    PayResponseOnRampLink onRampResponse = JsonConvert.DeserializeObject<PayResponseOnRampLink>(response.Data);
+                    if (onRampResponse.error.code == "empty-balances" ||
+                        onRampResponse.error.code == "insufficient-balances" ||
+                        onRampResponse.error.message.Contains("Not sufficient funds to bridge"))
                     {
-                        string onrampLink = onRampResponse.Data?.OnrampLink;
+                        string onrampLink = onRampResponse.data?.onrampLink;
                         throw new PayError("insufficient balances", onrampLink);
                     }
                     else
                     {
                         PayErrorResponse errorResponse = JsonConvert.DeserializeObject<PayErrorResponse>(response.Error);
-                        throw new Exception($"Payment failed: {errorResponse.Error.Message ?? errorResponse.Error.Code}");
+                        throw new Exception($"Payment failed: {errorResponse.error.code ?? errorResponse.error.message}");
                     }
                 }
                 else
@@ -950,13 +1015,13 @@ namespace SphereOne
             }
             catch (PayError e)
             {
-                _logger.LogError($"There was an error paying your transaction. User needs to perform onramp with OnrampLink in Error Response");
-                throw e;
+                _logger.LogError($"There was an error paying your transaction. User needs to perform onramp with OnrampLink in Error Response: {e.Message}");
+                throw;
             }
             catch (Exception e)
             {
                 _logger.LogError($"There was an error paying your transaction, error: {e.Message}");
-                throw e;
+                throw;
             }
         }
 
@@ -998,7 +1063,7 @@ namespace SphereOne
             var form = body.ToForm();
             string refreshUrl = $"{DOMAIN}/oauth2/token";
             var res = await WebRequestHandler.Post(refreshUrl, form, _headers);
-            var refreshCredentials = JsonConvert.DeserializeObject<Credentials>(res);
+            var refreshCredentials = JsonConvert.DeserializeObject<Credentials>(res.Data);
             if (!string.IsNullOrEmpty(refreshCredentials.access_token))
             {
                 RefreshUserAuthentication(refreshCredentials);
@@ -1053,18 +1118,30 @@ namespace SphereOne
         /// </summary>
         /// <param name="transactionId"></param>
         /// <returns>The <see cref="PayRouteEstimate"/> object or null if there was an error.</returns>
-        public async Task<PayRouteEstimate> GetRouteEstimation(GetRouteEstimationParams parameters)
+        public async Task<PayRouteEstimate> GetRouteEstimation(string transactionId)
         {
             try
             {
-                WebRequestResponse response = await EstimateRoute(parameters);
+                if (_environment == Environment.EDITOR)
+                {
+                    // TODO fake charge mock data
+                    return null;
+                }
+
+                await CheckJwtExpiration();
+
+                var serializedBody = JsonConvert.SerializeObject(new
+                {
+                    transactionId = transactionId
+                });
+                WebRequestResponse response = await WebRequestHandler.Post($"{_sphereOneApiUrl}/pay/route", serializedBody, _headers);
                 if (!response.IsSuccess)
                 {
-                    dynamic error = JsonConvert.DeserializeObject(response.Error);
+                    OnRampErrorFormatResponse error = JsonConvert.DeserializeObject<OnRampErrorFormatResponse>(response.Error);
                     if (error.code == "empty-balances" || error.code == "insufficient-balances")
                     {
                         OnRampResponse data = JsonConvert.DeserializeObject<OnRampResponse>(response.Data);
-                        string onrampLink = data.OnrampLink;
+                        string onrampLink = data.onrampLink;
                         throw new RouteEstimateError(error.code, onrampLink);
                     }
                     else
@@ -1074,9 +1151,11 @@ namespace SphereOne
                 }
                 else
                 {
-                    PayRouteEstimate data = JsonConvert.DeserializeObject<PayRouteEstimate>(response.Data);
-                    RouteBatch[] parsedRoute = JsonConvert.DeserializeObject<RouteBatch[]>(data.estimation.route);
-                    var batches = Array.ConvertAll(parsedRoute, b => FormatBatch(b.description, b.actions));
+                    var data = JsonConvert.DeserializeObject<PayRouteEstimateResponse>(response.Data).data;
+                    List<RouteBatch> parsedRouteList = JsonConvert.DeserializeObject<List<RouteBatch>>(data.estimation.route);
+                    FormattedBatch[] batches = parsedRouteList
+                        .Select(b => FormatBatch(b.description, b.actions.ToList()))
+                        .ToArray();
                     PayRouteEstimate newData = new PayRouteEstimate(data)
                     {
                         estimation = new PayRouteTotalEstimation(data.estimation)
@@ -1084,18 +1163,19 @@ namespace SphereOne
                             routeParsed = batches
                         }
                     };
+                    _logger.Log($"Route Estimation: {newData.ToString()}");
                     return newData;
                 }
             }
             catch (RouteEstimateError e)
             {
-                _logger.LogError($"There was an error calculating route for transaction. User needs to perform onramp with OnrampLink in Error Response before route calculation can be done.");
-                throw e;
+                _logger.LogError($"There was an error calculating route for transaction. User needs to perform onramp with OnrampLink in Error Response before route calculation can be done: {e.Message}");
+                throw;
             }
             catch (Exception e)
             {
-                _logger.LogError($"There was an error paying your transaction, error: {e.Message}");
-                throw e;
+                _logger.LogError($"There was an error calculating route for your transaction, error: {e.Message}");
+                throw;
             }
         }
 
@@ -1113,12 +1193,12 @@ namespace SphereOne
 
                 var bodySerialized = JsonConvert.SerializeObject(new
                 {
-                    nftData.fromAddress,
-                    nftData.toAddress,
-                    nftData.chain,
-                    nftData.nftTokenAddress,
-                    nftData.tokenId,
-                    nftData.reason,
+                    data.fromAddress,
+                    data.toAddress,
+                    data.chain,
+                    data.nftTokenAddress,
+                    data.tokenId,
+                    data.reason,
                     wrappedDek = dek
                 });
 
@@ -1323,5 +1403,34 @@ namespace SphereOne
         }
 
         public string pinCode;
+    }
+
+    public class OnRampErrorFormatResponse
+    {
+        public string code { get; set; }
+        public string message { get; set; }
+    }
+
+    public class WrappedDekFormatResponse
+    {
+        public string data { get; set; }
+        public string error { get; set; }
+    }
+
+    // {"data":{"code":"DEK","share":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaGFyZSI6IjgwMjNjM2U1ZmE3ODIyODQwMmFjZDMyZjI3NzYwMTZlNjllMzMyN2MzY2M3ZGI3ODNmYjk1MWZkNDk3ODM0M2NhODNkYWMyZjdmZTc2NDY4YTk1MTlkMTgwMTAyMTMzNjA4NTVmODkxNjJlMzY3ZTU5Mzg5ZWY2ZDM1OGRmMGE1NjliYmYyYjhkYzg5ODExODczZGRmZTJkOTM1NWQ0MWZmMmUyZTUwZDBlNzIzMjA4NDFmNzg0MGI5MzVkNDc3NjQ0ZiIsImV4cCI6MTY5OTM4NTc4MiwidGFyZ2V0IjoiYWlYOWF6U01zNXRFUUw2MHZ5bE4iLCJpYXQiOjE2OTkzODM5ODJ9.RwwJptotuSb1Vyy6PTlXZ7SgblTG-T6xCP3lSmxpqBo"},"error":null}
+    public class PinCodeFormatResponse
+    {
+        public PinCodeData data { get; set; }
+        public string error { get; set; }
+    }
+
+    public class PinCodeData
+    {
+        // DEK, PIN, 
+        public string code { get; set; }
+        public string share { get; set; }
+
+        // can be null or "OK"
+        public string status { get; set; }
     }
 }

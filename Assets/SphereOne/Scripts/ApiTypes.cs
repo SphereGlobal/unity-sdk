@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -157,14 +158,15 @@ namespace SphereOne
         public string tokenType;
     }
 
+#nullable enable
     [Serializable]
     public class ChargeItem
     {
-        public ChargeItem() { }
+        public ChargeItem() : this(default!, default!, default!, default!, null, null, null) { }
 
         public ChargeItem(string name, string image, double amount, double quantity,
-                          string nftUri = "", string nftContractAddress = "",
-                          SupportedChains nftChain = SupportedChains.Unknown)
+                          string? nftUri = null, string? nftContractAddress = null,
+                          SupportedChains? nftChain = null)
         {
             this.name = name;
             this.image = image;
@@ -181,23 +183,23 @@ namespace SphereOne
         public double quantity;
 
         // Optional
-        public string nftUri;
-        public string nftContractAddress;
-        public SupportedChains nftChain;
+        public string? nftUri;
+        public string? nftContractAddress;
+        public SupportedChains? nftChain;
     }
 
     [Serializable]
     public class ChargeReqBody
     {
-        public ChargeReqBody() { }
+        public ChargeReqBody() : this(default!, default!, default!, default!, default!, default!, 0.0, null) { }
 
         public ChargeReqBody(string tokenAddress, string symbol, List<ChargeItem> items,
-                            SupportedChains chain, string successUrl, string cancelUrl,
-                            double amount = 0.0, string toAddress = null)
+                             SupportedChains chain, string successUrl, string cancelUrl,
+                             double amount = 0.0, string? toAddress = null)
         {
             this.tokenAddress = tokenAddress;
             this.symbol = symbol;
-            this.items = items;
+            this.items = items ?? new List<ChargeItem>(); // Ensure items is not null
             this.chain = chain;
             this.successUrl = successUrl;
             this.cancelUrl = cancelUrl;
@@ -214,8 +216,9 @@ namespace SphereOne
 
         // Optional
         public double amount;
-        public string toAddress;
+        public string? toAddress;
     }
+#nullable disable
 
     [Serializable]
     public class ChargeResponse
@@ -528,21 +531,23 @@ namespace SphereOne
     [Serializable]
     public class PayRouteEstimateResponse
     {
-        public PayRouteEstimate data;
-        public GenericErrorCodeResponse error;
+        public PayRouteEstimate data { get; set; }
+        public GenericErrorCodeResponse error { get; set; }
     }
 
     [Serializable]
     public class PayRouteEstimate
     {
-        public string txId { get; set; }; // transactionId
-        public TxStatus status { get; set; }; // TxStatus
-        public decimal total { get; set; }; // total amount initially received, not including other costs
-        public decimal totalUsd { get; set; }; // total amount initially received, in USD, not including other costs
-        public PayRouteTotalEstimation estimation { get; set; };
-        public PayRouteDestinationEstimate to { get; set; };
-        public long startTimestamp { get; set; }; // timestamp
-        public long limitTimestamp { get; set; }; // timestamp
+        public string txId { get; set; } // transactionId
+        public TxStatus status { get; set; } // TxStatus
+        public decimal total { get; set; } // total amount initially received, not including other costs
+        public decimal totalUsd { get; set; } // total amount initially received, in USD, not including other costs
+        public PayRouteTotalEstimation estimation { get; set; }
+        public PayRouteDestinationEstimate to { get; set; }
+        public long startTimestamp { get; set; } // timestamp
+        public long limitTimestamp { get; set; } // timestamp
+
+        public PayRouteEstimate() { }
 
         public PayRouteEstimate(string txId, TxStatus status, decimal total, decimal totalUsd, PayRouteTotalEstimation estimation,
             PayRouteDestinationEstimate to, long startTimestamp, long limitTimestamp)
@@ -578,13 +583,14 @@ namespace SphereOne
     [Serializable]
     public class PayRouteTotalEstimation
     {
-        public decimal costUsd { get; set; }; // cost in USD
-        public int timeEstimate { get; set; }; // in minutes
-        public string gas { get; set; }; // gas for the transaction
+        public decimal costUsd { get; set; } // cost in USD
+        public int timeEstimate { get; set; } // in minutes
+        public string gas { get; set; } // gas for the transaction
         public string route; // the route batches
-        public string routeParsedString { get; set; }; // the route batches that will be executed
 
-        public FormattedBatch[] routeParsed { get; set; }; // the route batches that will be executed
+        public FormattedBatch[] routeParsed { get; set; } // the route batches that will be executed
+
+        public PayRouteTotalEstimation() { }
 
         public PayRouteTotalEstimation(decimal costUsd, int timeEstimate, string gas, string route, FormattedBatch[] routeParsed = null)
         {
@@ -606,7 +612,11 @@ namespace SphereOne
 
         public override string ToString()
         {
-            return $"costUsd: {costUsd}\ntimeEstimate: {timeEstimate}\ngas: {gas}\nroute: {route}";
+            var routeParsedContent = routeParsed == null || routeParsed.Length == 0
+                 ? ""
+                 : string.Join("\n", routeParsed.Select(batch => batch.ToString()));
+
+            return $"costUsd: {costUsd}\ntimeEstimate: {timeEstimate}\ngas: {gas}\nroute: {routeParsedContent}";
         }
     }
 
@@ -634,9 +644,11 @@ namespace SphereOne
     [Serializable]
     public class FormattedBatch
     {
-        public BatchType type { get; set; };
-        public string title { get; set; };
-        public string[] operations { get; set; };
+        public BatchType type { get; set; }
+        public string title { get; set; }
+        public string[] operations { get; set; }
+
+        public FormattedBatch() { }
 
         public FormattedBatch(BatchType type, string title, string[] operations)
         {
@@ -654,15 +666,19 @@ namespace SphereOne
 
         public override string ToString()
         {
-            return $"type: {type}\ntitle: {title}\noperations: {operations}";
+            // Check if the operations array is null or empty
+            var operationsContent = operations == null || operations.Length == 0
+                ? ""
+                : string.Join("\n- ", operations);
+            return $"type: {type}\ntitle: {title}\noperations: {operationsContent}";
         }
     }
 
     public class FormattedBatchRender
     {
-        public BatchType type { get; set; };
-        public string title { get; set; };
-        public List<string> operations { get; set; };
+        public BatchType type { get; set; }
+        public string title { get; set; }
+        public List<string> operations { get; set; }
     }
 
     [Serializable]
@@ -692,7 +708,6 @@ namespace SphereOne
 
         public PayError(string message, string onrampLink = null) : base(message)
         {
-            this.Name = "PayError";
             this.onrampLink = onrampLink;
         }
 
@@ -706,7 +721,6 @@ namespace SphereOne
 
         public RouteEstimateError(string message, string onrampLink = null) : base(message)
         {
-            this.Name = "RouteEstimateError";
             this.onrampLink = onrampLink;
         }
     }
@@ -714,25 +728,25 @@ namespace SphereOne
     [Serializable]
     public class BigNumberObj
     {
-        public string hex { get; set; };
-        public string type { get; set; };
+        public string hex { get; set; }
+        public string type { get; set; }
     }
 
     [Serializable]
     public class TokenizedShare
     {
-        public string DEK { get; set; };
-        public string error { get; set; };
+        public string DEK { get; set; }
+        public string error { get; set; }
     }
 
     [Serializable]
     public class NftDataParams
     {
-        public string fromAddress { get; set; };
-        public string toAddress { get; set; };
-        public SupportedChains chain { get; set; };
-        public string nftTokenAddress { get; set; };
-        public string tokenId { get; set; };
-        public string reason { get; set; };
+        public string fromAddress { get; set; }
+        public string toAddress { get; set; }
+        public SupportedChains chain { get; set; }
+        public string nftTokenAddress { get; set; }
+        public string tokenId { get; set; }
+        public string reason { get; set; }
     }
 }

@@ -57,7 +57,11 @@ namespace SphereOne
                     }
                 }
 
-                await request.SendWebRequest();
+                var res = request.SendWebRequest();
+                while (!res.isDone)
+                {
+                    await Task.Yield();
+                }
 
                 bool isSuccess = IsResponseSuccessful(request);
                 string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
@@ -84,7 +88,11 @@ namespace SphereOne
                     }
                 }
 
-                await request.SendWebRequest();
+                var res = request.SendWebRequest();
+                while (!res.isDone)
+                {
+                    await Task.Yield();
+                }
 
                 bool isSuccess = IsResponseSuccessful(request);
                 string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
@@ -106,7 +114,11 @@ namespace SphereOne
                     }
                 }
 
-                await request.SendWebRequest();
+                var res = request.SendWebRequest();
+                while (!res.isDone)
+                {
+                    await Task.Yield();
+                }
 
                 bool isSuccess = IsResponseSuccessful(request);
                 string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
@@ -133,7 +145,11 @@ namespace SphereOne
                     }
                 }
 
-                await request.SendWebRequest();
+                var res = request.SendWebRequest();
+                while (!res.isDone)
+                {
+                    await Task.Yield();
+                }
 
                 bool isSuccess = IsResponseSuccessful(request);
                 string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
@@ -145,8 +161,15 @@ namespace SphereOne
 
         public static async Task<WebRequestResponse> Put(string url, WWWForm formData, Dictionary<string, string> headers = null)
         {
-            using (UnityWebRequest request = UnityWebRequest.Put(url, formData))
+            using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPUT))
             {
+                if (formData != null)
+                {
+                    request.uploadHandler = new UploadHandlerRaw(formData.data);
+                    request.uploadHandler.contentType = "application/x-www-form-urlencoded";
+                }
+                request.downloadHandler = new DownloadHandlerBuffer();
+
                 if (headers != null)
                 {
                     foreach (var header in headers)
@@ -155,7 +178,11 @@ namespace SphereOne
                     }
                 }
 
-                await request.SendWebRequest();
+                var res = request.SendWebRequest();
+                while (!res.isDone)
+                {
+                    await Task.Yield();
+                }
 
                 bool isSuccess = IsResponseSuccessful(request);
                 string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
@@ -177,7 +204,11 @@ namespace SphereOne
                     }
                 }
 
-                await request.SendWebRequest();
+                var res = request.SendWebRequest();
+                while (!res.isDone)
+                {
+                    await Task.Yield();
+                }
 
                 bool isSuccess = IsResponseSuccessful(request);
                 string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
@@ -191,13 +222,13 @@ namespace SphereOne
         {
             using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
             request.timeout = timeoutSeconds;
-            var operation = request.SendWebRequest();
+            var res = request.SendWebRequest();
 
-            while (!operation.isDone)
+            while (!res.isDone)
             {
                 if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
                 {
-                    Debug.LogError($"Error while downloading texture:" request.error);
+                    Debug.LogError($"Error while downloading texture: {request.error}");
                     return null;
                 }
 
@@ -206,8 +237,8 @@ namespace SphereOne
 
             if (!IsResponseSuccessful(request))
             {
-                Debug.LogError($"Failed to download texture from {url}");
-                return new WebRequestResponse(null, request.error, false);
+                Debug.LogError($"Failed to download texture from {url}: {request.error}");
+                return null;
             }
 
             // Success

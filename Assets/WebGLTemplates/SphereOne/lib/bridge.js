@@ -72,11 +72,17 @@ var bridge = new Bridge()
 // Listen for response from iframe
 window.addEventListener('message', function (event) {
   const pinCodeData = event.data;
-  if (pinCodeData.data.code.toLowerCase() === 'dek') {
+  if (pinCodeData.data?.code?.toLowerCase() === 'dek') {
     window.unityInstance.SendMessage(
       'SphereOneManager',
       'CALLBACK_SetPinCodeShare',
       pinCodeData.data.share
+    );
+  } else if (pinCodeData.data?.code?.toLowerCase() === 'pin') {
+    window.unityInstance.SendMessage(
+      'SphereOneManager',
+      'CALLBACK_SetPinCodeShare',
+      pinCodeData.data.status
     );
   }
 
