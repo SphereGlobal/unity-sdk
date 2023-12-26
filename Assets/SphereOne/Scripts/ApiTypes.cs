@@ -98,12 +98,15 @@ namespace SphereOne
         public string tokenType;
     }
 
+#nullable enable
     [Serializable]
     public class ChargeItem
     {
-        public ChargeItem() { }
+        public ChargeItem() : this(default!, default!, default!, default!, null, null, null) { }
 
-        public ChargeItem(string name, string image, double amount, double quantity, string nftUri = "", string nftContractAddress = "", SupportedChains nftChain = SupportedChains.Unknown)
+        public ChargeItem(string name, string image, double amount, double quantity,
+                          string? nftUri = null, string? nftContractAddress = null,
+                          SupportedChains? nftChain = null)
         {
             this.name = name;
             this.image = image;
@@ -120,21 +123,23 @@ namespace SphereOne
         public double quantity;
 
         // Optional
-        public string nftUri;
-        public string nftContractAddress;
-        public SupportedChains nftChain;
+        public string? nftUri;
+        public string? nftContractAddress;
+        public SupportedChains? nftChain;
     }
 
     [Serializable]
     public class ChargeReqBody
     {
-        public ChargeReqBody() { }
+        public ChargeReqBody() : this(default!, default!, default!, default!, default!, default!, 0.0, null) { }
 
-        public ChargeReqBody(string tokenAddress, string symbol, List<ChargeItem> items, SupportedChains chain, string successUrl, string cancelUrl, double amount = 0.0, string toAddress = null)
+        public ChargeReqBody(string tokenAddress, string symbol, List<ChargeItem> items,
+                             SupportedChains chain, string successUrl, string cancelUrl,
+                             double amount = 0.0, string? toAddress = null)
         {
             this.tokenAddress = tokenAddress;
             this.symbol = symbol;
-            this.items = items;
+            this.items = items ?? new List<ChargeItem>(); // Ensure items is not null
             this.chain = chain;
             this.successUrl = successUrl;
             this.cancelUrl = cancelUrl;
@@ -151,8 +156,9 @@ namespace SphereOne
 
         // Optional
         public double amount;
-        public string toAddress;
+        public string? toAddress;
     }
+#nullable disable
 
     [Serializable]
     public class ChargeResponse

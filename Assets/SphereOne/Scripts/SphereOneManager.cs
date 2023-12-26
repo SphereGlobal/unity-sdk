@@ -641,16 +641,20 @@ namespace SphereOne
         /// <param name="chargeReq"></param>
         /// <param name="isTest">Not required. Determines if API Key is test or production. By default, it is false.</param>
         /// <returns>The <see cref="ChargeResponse"/> object or null if there was an error.</returns>
-        async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false)
+        async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false, bool isDirectTransfer = false)
         {
             if (_environment == Environment.EDITOR)
             {
                 // TODO fake charge mock data
                 return null;
             }
-
-            var body = new CreateChargeReqBodyWrapper(chargeReq, isTest);
-            var bodySerialized = JsonConvert.SerializeObject(body);
+            var body = new CreateChargeReqBodyWrapper(chargeReq, isTest, isDirectTransfer);
+            var settings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                DefaultValueHandling = DefaultValueHandling.Ignore
+            };
+            var bodySerialized = JsonConvert.SerializeObject(body, settings);
 
             string url = $"{_sphereOneApiUrl}/createCharge";
             var res = await WebRequestHandler.Post(url, bodySerialized, _headers);
@@ -890,7 +894,8 @@ namespace SphereOne
         public string token_type;
 
         // For Debugging, Testing
-        public override string ToString() {
+        public override string ToString()
+        {
             return $"access_token: {access_token}\nrefresh_token: {refresh_token}\nid_token: {id_token}\nscope: {scope}\nexpires_in: {expires_in}\ntoken_type: {token_type}";
         }
     }
@@ -910,7 +915,8 @@ namespace SphereOne
         }
 
         // Refresh does not work as JSON
-        public WWWForm ToForm() {
+        public WWWForm ToForm()
+        {
             WWWForm form = new WWWForm();
             form.AddField("grant_type", grant_type);
             form.AddField("refresh_token", refresh_token);
@@ -959,13 +965,15 @@ namespace SphereOne
     [Serializable]
     class CreateChargeReqBodyWrapper
     {
-        public CreateChargeReqBodyWrapper(ChargeReqBody chargeData, bool isTest)
+        public CreateChargeReqBodyWrapper(ChargeReqBody chargeData, bool isTest, bool isDirectTransfer)
         {
             this.isTest = isTest;
+            this.isDirectTransfer = isDirectTransfer;
             this.chargeData = chargeData;
         }
 
         public bool isTest;
+        public bool isDirectTransfer;
         public ChargeReqBody chargeData;
     }
 
