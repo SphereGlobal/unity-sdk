@@ -83,8 +83,7 @@ namespace SphereOne
         [Tooltip("Filter the background when the slideout is open")]
         [SerializeField] BackgroundFilter _backgroundFilter = BackgroundFilter.DARKEN;
 
-        // [SerializeField] string _sphereOneApiUrl = "https://api-olgsdff53q-uc.a.run.app";
-        [SerializeField] string _sphereOneApiUrl = "http://127.0.0.1:5001/spheremvp/us-central1/api";
+        [SerializeField] string _sphereOneApiUrl = "https://api-olgsdff53q-uc.a.run.app";
         [SerializeField] string _clientId;
 
         [Tooltip("The URL of your game. This is where the Auth Provider will redirect back to.")]
@@ -221,7 +220,6 @@ namespace SphereOne
         // Do not rename this function without updating sphereone.jslib and/or bridge.js
         async void CALLBACK_PopupLoginSuccess(string callbackUrl)
         {
-            //android -> data={"data":{"code":"DEK","share":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaGFyZSI6IjgwMjNjM2U1ZmE3ODIyODQwMmFjZDMyZjI3NzYwMTZlNjllMzMyN2MzY2M3ZGI3ODNmYjk1MWZkNDk3ODM0M2NhODNkYWMyZjdmZTc2NDY4YTk1MTlkMTgwMTAyMTMzNjA4NTVmODkxNjJlMzY3ZTU5Mzg5ZWY2ZDM1OGRmMGE1NjliYmYyYjhkYzg5ODExODczZGRmZTJkOTM1NWQ0MWZmMmUyZTUwZDBlNzIzMjA4NDFmNzg0MGI5MzVkNDc3NjQ0ZiIsImV4cCI6MTY5OTM4NTc4MiwidGFyZ2V0IjoiYWlYOWF6U01zNXRFUUw2MHZ5bE4iLCJpYXQiOjE2OTkzODM5ODJ9.RwwJptotuSb1Vyy6PTlXZ7SgblTG-T6xCP3lSmxpqBo"},"error":null}
             _logger.Log($"Received token from popup: {callbackUrl}.");
 
             if (_loginMode != LoginBehavior.POPUP) return;
@@ -1182,7 +1180,7 @@ namespace SphereOne
             }
         }
 
-        public async Task TransferNft(NftDataParams data)
+        public async Task<TransferNftResponse> TransferNft(NftDataParams data)
         {
             try
             {
@@ -1214,7 +1212,9 @@ namespace SphereOne
                 }
                 else
                 {
-                    _logger.Log($"NFT Transferred: {response.Data}");
+                    TransferNftResponse nftTransferResult = JsonConvert.DeserializeObject<TransferNftResponseWrapper>(response.Data).data;
+                    _logger.Log($"NFT Transferred: {nftTransferResult.approveTxHash}");
+                    return nftTransferResult;
                 }
             }
             catch (Exception e)
@@ -1414,7 +1414,6 @@ namespace SphereOne
         public string error { get; set; }
     }
 
-    // {"data":{"code":"DEK","share":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaGFyZSI6IjgwMjNjM2U1ZmE3ODIyODQwMmFjZDMyZjI3NzYwMTZlNjllMzMyN2MzY2M3ZGI3ODNmYjk1MWZkNDk3ODM0M2NhODNkYWMyZjdmZTc2NDY4YTk1MTlkMTgwMTAyMTMzNjA4NTVmODkxNjJlMzY3ZTU5Mzg5ZWY2ZDM1OGRmMGE1NjliYmYyYjhkYzg5ODExODczZGRmZTJkOTM1NWQ0MWZmMmUyZTUwZDBlNzIzMjA4NDFmNzg0MGI5MzVkNDc3NjQ0ZiIsImV4cCI6MTY5OTM4NTc4MiwidGFyZ2V0IjoiYWlYOWF6U01zNXRFUUw2MHZ5bE4iLCJpYXQiOjE2OTkzODM5ODJ9.RwwJptotuSb1Vyy6PTlXZ7SgblTG-T6xCP3lSmxpqBo"},"error":null}
     public class PinCodeFormatResponse
     {
         public PinCodeData data { get; set; }
@@ -1429,5 +1428,24 @@ namespace SphereOne
 
         // can be null or "OK"
         public string status { get; set; }
+    }
+
+    [Serializable]
+    public class TransferNftResponseWrapper
+    {
+        public TransferNftResponse data { get; set; }
+        public string error { get; set; }
+    }
+
+    [Serializable]
+    public class TransferNftResponse
+    {
+        public string approveTxHash { get; set; }
+        public string userOperationHash { get; set; }
+
+        public override string ToString()
+        {
+            return $"approveTxHash: {approveTxHash},\nuserOperationHash: {userOperationHash}";
+        }
     }
 }
