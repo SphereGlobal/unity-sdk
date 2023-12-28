@@ -222,10 +222,6 @@ namespace SphereOne
         {
             _logger.Log($"Received token from popup: {callbackUrl}.");
 
-            if (_loginMode != LoginBehavior.POPUP) return;
-
-            if (IsAuthenticated) return;
-
             if (callbackUrl.Contains("data="))
             {
                 //! NOTE: THIS IS SPECIFICALLY FOR PIN CODE, NOT FOR LOGIN. JUST REUSING THE CALLBACK.
@@ -238,6 +234,10 @@ namespace SphereOne
                     return;
                 }
             }
+
+            if (_loginMode != LoginBehavior.POPUP) return;
+
+            if (IsAuthenticated) return;
 
             if (!callbackUrl.Contains("code="))
                 return;
