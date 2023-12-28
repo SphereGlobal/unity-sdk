@@ -152,29 +152,10 @@ namespace SphereOne
     [Serializable]
     public class Nft
     {
-        public string img { get; set; }
-        public string name { get; set; }
-        public string address { get; set; } // NFT contract address
-        public string tokenType { get; set; }
-
-        public string tokenId { get; set; } // NFT token id
-
-        public SupportedChains chain { get; set; }
-
-        public string walletAddress { get; set; } // wallet address of the owner
-
-        public Nft() { }
-
-        public Nft(string img, string name, string address, string tokenType, string tokenId, SupportedChains chain, string walletAddress)
-        {
-            this.img = img;
-            this.name = name;
-            this.address = address;
-            this.tokenType = tokenType;
-            this.tokenId = tokenId;
-            this.chain = chain;
-            this.walletAddress = walletAddress;
-        }
+        public string img;
+        public string name;
+        public string address;
+        public string tokenType;
     }
 
 #nullable enable
@@ -772,17 +753,5 @@ namespace SphereOne
         public string nftTokenAddress { get; set; }
         public string tokenId { get; set; }
         public string reason { get; set; }
-
-        public NftDataParams() { }
-
-        public NftDataParams(string fromAddress, string toAddress, SupportedChains chain, string nftTokenAddress, string tokenId, string reason)
-        {
-            this.fromAddress = fromAddress;
-            this.toAddress = toAddress;
-            this.chain = chain;
-            this.nftTokenAddress = nftTokenAddress;
-            this.tokenId = tokenId;
-            this.reason = reason;
-        }
     }
 }

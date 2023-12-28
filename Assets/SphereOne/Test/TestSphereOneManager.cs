@@ -4,7 +4,6 @@ using SphereOne;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Unity.VisualScripting;
-using System.Linq; // Added this line to use LINQ methods
 
 public class TestSphereOneManager : MonoBehaviour
 {
@@ -105,46 +104,14 @@ public class TestSphereOneManager : MonoBehaviour
             return;
         SphereOneManager.Instance.OpenPinCode(_chargeId);
     }
-
-    // This opens a popup to enter the pin code. So, no need to await.
-    async public void OpenPinCodeForNftTransfer()
-    {
-        SphereOneManager.Instance.OpenPinCode(PincodeTargets.SendNft);
-    }
 #pragma warning restore CS1998
 
     async public void TransferNft()
     {
         try
         {
-            // NOTE: receiver walletAddress. Replace this with the receiver's wallet address
-            var receiver = "";
-            // NOTE: current user's NFTs
-            var nfts = SphereOneManager.Instance.Nfts;
-            if (nfts.Count == 0)
-            {
-                throw new Exception("No NFTs found");
-            }
-            // NOTE: for testing purposes, we are just taking the first NFT that's a POLYGON BUT it has to be ERC721
-            var filterNfts = nfts.Where(n => n.chain == SupportedChains.POLYGON && n.tokenType == "ERC721").ToList(); // Changed this line to filter the NFTs
-            if (filterNfts.Count == 0)
-            {
-                throw new Exception("No NFTs found for the selected chain and token type");
-            }
-            var nft = filterNfts[0]; // NOTE: Change this to the NFT you want to transfer
-
-            // NOTE: Needs to be an NFT that you/user owns
-            var nftToTransfer = new NftDataParams
-            {
-                chain = nft.chain,
-                fromAddress = nft.walletAddress, // wallet address that the NFT belongs to
-                toAddress = receiver, // the receiver wallet address
-                nftTokenAddress = nft.address,
-                tokenId = nft.tokenId,
-                reason = "Testing NFT transfer", // a reason for the transfer
-            };
-            var nftTransferResult = await SphereOneManager.Instance.TransferNft(nftToTransfer);
-            Debug.Log("NFT transferred successfully: " + nftTransferResult.ToString());
+            // TODO: Implement this
+            // await SphereOneManager.Instance.TransferNft();
         }
         catch (Exception e)
         {
