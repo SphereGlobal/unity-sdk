@@ -71,7 +71,21 @@ var bridge = new Bridge()
 
 // Listen for response from iframe
 window.addEventListener('message', function (event) {
-  //   if (event.origin !== 'https://wallet.sphereone.xyz') return
+  const pinCodeData = event.data;
+  if (pinCodeData.data?.code?.toLowerCase() === 'dek') {
+    window.unityInstance.SendMessage(
+      'SphereOneManager',
+      'CALLBACK_SetPinCodeShare',
+      pinCodeData.data.share
+    );
+  } else if (pinCodeData.data?.code?.toLowerCase() === 'pin') {
+    window.unityInstance.SendMessage(
+      'SphereOneManager',
+      'CALLBACK_SetPinCodeShare',
+      pinCodeData.data.status
+    );
+  }
+
   if (typeof event.data !== 'string') return
 
   const data = JSON.parse(event.data)
