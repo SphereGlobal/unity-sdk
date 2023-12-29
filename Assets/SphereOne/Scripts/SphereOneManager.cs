@@ -220,7 +220,6 @@ namespace SphereOne
         // Do not rename this function without updating sphereone.jslib and/or bridge.js
         async void CALLBACK_PopupLoginSuccess(string callbackUrl)
         {
-            _logger.Log($"Received token from popup: {callbackUrl}.");
 
             if (callbackUrl.Contains("data="))
             {
@@ -295,7 +294,6 @@ namespace SphereOne
         /// <param name="share"></param>
         void CALLBACK_SetPinCodeShare(string share)
         {
-            _logger.Log($"CALLBACK_SetPinCodeShare -> share: {share}");
             if (share.ToLower() == "ok")
             {
                 // user has successfully added a pin code
