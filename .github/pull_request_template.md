@@ -1,6 +1,6 @@
 ### **PR Description**
 
-Jira Ticket: [JIRA-XXXX](https://sphereone.atlassian.net/browse/JIRA-XXXX)
+Jira Ticket: [ENG-XXXX](https://sphereone.atlassian.net/browse/ENG-XXXX)
 
 This PR has changes to fix the typo in Home Screen's `Collectables` to `Collectibles`, and also fix the weird scrolling behavior on Discovery Screen...
 
