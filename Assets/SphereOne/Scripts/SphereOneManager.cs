@@ -917,7 +917,9 @@ namespace SphereOne
         /// <param name="isTest">Not required. Determines if API Key is test or production. By default, it is false.</param>
         /// <param name="isDirectTransfer">Not required. By default, it is false.</param>
         /// <returns>The <see cref="ChargeResponse"/> object or null if there was an error.</returns>
-        async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false, bool isDirectTransfer = false)
+#nullable enable
+        async public Task<ChargeResponse> CreateCharge(ChargeReqBody chargeReq, bool isTest = false,
+                bool isDirectTransfer = false, CallSmartContractProps? callSmartContractProps = null)
         {
             try
             {
@@ -929,7 +931,7 @@ namespace SphereOne
                 // remove old wrappedDek whenever a new charge is created
                 _wrappedDek = null;
 
-                var body = new CreateChargeReqBodyWrapper(chargeReq, isTest, isDirectTransfer);
+                var body = new CreateChargeReqBodyWrapper(chargeReq, isTest, isDirectTransfer, callSmartContractProps);
                 var settings = new JsonSerializerSettings
                 {
                     NullValueHandling = NullValueHandling.Ignore
@@ -954,6 +956,7 @@ namespace SphereOne
                 throw e;
             }
         }
+#nullable disable
 
         /// <summary>
         /// Pay a charge created with <see cref="CreateCharge"/>
@@ -1363,20 +1366,24 @@ namespace SphereOne
         public PayResponse data;
     }
 
+#nullable enable
     [Serializable]
     class CreateChargeReqBodyWrapper
     {
-        public CreateChargeReqBodyWrapper(ChargeReqBody chargeData, bool isTest, bool isDirectTransfer)
+        public CreateChargeReqBodyWrapper(ChargeReqBody chargeData, bool isTest, bool isDirectTransfer, CallSmartContractProps? callSmartContractProps = null)
         {
             this.isTest = isTest;
             this.isDirectTransfer = isDirectTransfer;
             this.chargeData = chargeData;
+            this.callSmartContractProps = callSmartContractProps;
         }
 
         public bool isTest;
         public bool isDirectTransfer;
         public ChargeReqBody chargeData;
+        public CallSmartContractProps? callSmartContractProps;
     }
+#nullable disable
 
     [Serializable]
     class CreateChargeResponseWrapper : ApiResponseWrapper

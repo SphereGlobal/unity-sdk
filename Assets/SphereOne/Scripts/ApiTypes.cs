@@ -237,6 +237,28 @@ namespace SphereOne
         public double amount;
         public string? toAddress;
     }
+
+    [Serializable]
+    public class CallSmartContractProps
+    {
+        public string alias;
+        public string? nativeValue;
+        public string[]? functionParams;
+
+        public CallSmartContractProps()
+        {
+            this.alias = string.Empty;
+            this.nativeValue = null;
+            this.functionParams = null;
+        }
+
+        public CallSmartContractProps(string alias = "", string? nativeValue = null, string[]? functionParams = null)
+        {
+            this.alias = alias;
+            this.nativeValue = nativeValue;
+            this.functionParams = functionParams;
+        }
+    }
 #nullable disable
 
     [Serializable]

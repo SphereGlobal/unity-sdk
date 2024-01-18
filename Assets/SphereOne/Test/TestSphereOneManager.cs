@@ -34,9 +34,23 @@ public class TestSphereOneManager : MonoBehaviour
             cancelUrl = "https://your-website.com/cancel",
         };
 
+        // NOTE: This is for smart contract payments
+        // var functionParams = new List<string>();
+        // functionParams.Add("2000000000000000000"); // 2*10^18 (2 MATIC)
+
+        // var smartContractPropsData = new CallSmartContractProps
+        // {
+        //     alias = "test",
+        //     nativeValue = "0",
+        //     functionParams = functionParams.ToArray()
+        // };
+
         var isTest = false;
         var isDirectTransfer = false;
         var charge = await SphereOneManager.Instance.CreateCharge(chargeRequest, isTest, isDirectTransfer);
+
+        // NOTE: This is for smart contract payments
+        // var charge = await SphereOneManager.Instance.CreateCharge(chargeRequest, isTest, isDirectTransfer, smartContractPropsData);
 
         _chargeId = charge.chargeId;
 
