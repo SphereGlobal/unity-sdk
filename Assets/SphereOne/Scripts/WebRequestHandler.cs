@@ -29,16 +29,16 @@ namespace SphereOne
             switch (request.result)
             {
                 case UnityWebRequest.Result.ConnectionError:
-                    if (!mute) Debug.LogError(url + ": Connection Error: " + request.error);
+                    if (!mute) Debug.LogError($"{url}: Connection Error: {request.error}");
                     return false;
                 case UnityWebRequest.Result.DataProcessingError:
-                    if (!mute) Debug.LogError(url + ": Error: " + request.error);
+                    if (!mute) Debug.LogError($"{url}: Error: {request.error}");
                     return false;
                 case UnityWebRequest.Result.ProtocolError:
-                    if (!mute) Debug.LogError(url + ": HTTP Error: " + request.error + ", " + request.downloadHandler.text);
+                    if (!mute) Debug.LogError($"{url}: HTTP Error: {request.error}, {request.downloadHandler.text}");
                     return false;
                 case UnityWebRequest.Result.Success:
-                    if (!mute) Debug.Log(url + ":\nReceived: " + request.downloadHandler.text);
+                    if (!mute) Debug.Log($"{url}: Received: {request.downloadHandler.text}");
                     return true;
             }
 
