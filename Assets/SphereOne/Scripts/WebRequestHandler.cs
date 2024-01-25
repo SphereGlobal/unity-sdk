@@ -9,9 +9,9 @@ namespace SphereOne
 {
     public class WebRequestResponse
     {
-        public string Data { get; set; }
-        public string Error { get; set; }
-        public bool IsSuccess { get; set; }
+        public string Data { get; }
+        public string Error { get; }
+        public bool IsSuccess { get; }
 
         public WebRequestResponse(string data, string error, bool isSuccess)
         {
