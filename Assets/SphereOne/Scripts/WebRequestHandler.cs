@@ -23,51 +23,39 @@ namespace SphereOne
 
     public static class WebRequestHandler
     {
-        private static bool IsResponseSuccessful(UnityWebRequest request, bool mute = false)
+        private static bool IsResponseSuccessful(UnityWebRequest request)
         {
-            string url = request.url;
-            switch (request.result)
+            return request.result == UnityWebRequest.Result.Success;
+        }
+
+        private static async Task<WebRequestResponse> SendRequest(UnityWebRequest request, Dictionary<string, string> headers)
+        {
+            if (headers != null)
             {
-                case UnityWebRequest.Result.ConnectionError:
-                    if (!mute) Debug.LogError($"{url}: Connection Error: {request.error}");
-                    return false;
-                case UnityWebRequest.Result.DataProcessingError:
-                    if (!mute) Debug.LogError($"{url}: Error: {request.error}");
-                    return false;
-                case UnityWebRequest.Result.ProtocolError:
-                    if (!mute) Debug.LogError($"{url}: HTTP Error: {request.error}, {request.downloadHandler.text}");
-                    return false;
-                case UnityWebRequest.Result.Success:
-                    if (!mute) Debug.Log($"{url}: Received: {request.downloadHandler.text}");
-                    return true;
+                foreach (var header in headers)
+                {
+                    request.SetRequestHeader(header.Key, header.Value);
+                }
             }
 
-            return false;
+            var res = request.SendWebRequest();
+            while (!res.isDone)
+            {
+                await Task.Yield();
+            }
+
+            bool isSuccess = IsResponseSuccessful(request);
+            string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
+            string error = isSuccess ? null : request.error;
+
+            return new WebRequestResponse(responseData, error, isSuccess);
         }
 
         public static async Task<WebRequestResponse> Get(string url, Dictionary<string, string> headers = null)
         {
             using (UnityWebRequest request = UnityWebRequest.Get(url))
             {
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        request.SetRequestHeader(header.Key, header.Value);
-                    }
-                }
-
-                var res = request.SendWebRequest();
-                while (!res.isDone)
-                {
-                    await Task.Yield();
-                }
-
-                bool isSuccess = IsResponseSuccessful(request);
-                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
-                string error = isSuccess ? null : request.error;
-
-                return new WebRequestResponse(responseData, error, isSuccess);
+                return await SendRequest(request, headers);
             }
         }
 
@@ -79,26 +67,7 @@ namespace SphereOne
                 request.uploadHandler = new UploadHandlerRaw(bodyRaw);
                 request.downloadHandler = new DownloadHandlerBuffer();
                 request.SetRequestHeader("Content-Type", "application/json");
-
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        request.SetRequestHeader(header.Key, header.Value);
-                    }
-                }
-
-                var res = request.SendWebRequest();
-                while (!res.isDone)
-                {
-                    await Task.Yield();
-                }
-
-                bool isSuccess = IsResponseSuccessful(request);
-                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
-                string error = isSuccess ? null : request.error;
-
-                return new WebRequestResponse(responseData, error, isSuccess);
+                return await SendRequest(request, headers);
             }
         }
 
@@ -106,25 +75,7 @@ namespace SphereOne
         {
             using (UnityWebRequest request = UnityWebRequest.Post(url, formData))
             {
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        request.SetRequestHeader(header.Key, header.Value);
-                    }
-                }
-
-                var res = request.SendWebRequest();
-                while (!res.isDone)
-                {
-                    await Task.Yield();
-                }
-
-                bool isSuccess = IsResponseSuccessful(request);
-                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
-                string error = isSuccess ? null : request.error;
-
-                return new WebRequestResponse(responseData, error, isSuccess);
+                return await SendRequest(request, headers);
             }
         }
 
@@ -136,32 +87,13 @@ namespace SphereOne
                 request.uploadHandler = new UploadHandlerRaw(bodyRaw);
                 request.downloadHandler = new DownloadHandlerBuffer();
                 request.SetRequestHeader("Content-Type", "application/json");
-
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        request.SetRequestHeader(header.Key, header.Value);
-                    }
-                }
-
-                var res = request.SendWebRequest();
-                while (!res.isDone)
-                {
-                    await Task.Yield();
-                }
-
-                bool isSuccess = IsResponseSuccessful(request);
-                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
-                string error = isSuccess ? null : request.error;
-
-                return new WebRequestResponse(responseData, error, isSuccess);
+                return await SendRequest(request, headers);
             }
         }
 
         public static async Task<WebRequestResponse> Put(string url, WWWForm formData, Dictionary<string, string> headers = null)
         {
-            using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPUT))
+            using (UnityWebRequest request = new UnityWebRequest(url, "PUT"))
             {
                 if (formData != null)
                 {
@@ -169,26 +101,7 @@ namespace SphereOne
                     request.uploadHandler.contentType = "application/x-www-form-urlencoded";
                 }
                 request.downloadHandler = new DownloadHandlerBuffer();
-
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        request.SetRequestHeader(header.Key, header.Value);
-                    }
-                }
-
-                var res = request.SendWebRequest();
-                while (!res.isDone)
-                {
-                    await Task.Yield();
-                }
-
-                bool isSuccess = IsResponseSuccessful(request);
-                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
-                string error = isSuccess ? null : request.error;
-
-                return new WebRequestResponse(responseData, error, isSuccess);
+                return await SendRequest(request, headers);
             }
         }
 
@@ -196,25 +109,7 @@ namespace SphereOne
         {
             using (UnityWebRequest request = UnityWebRequest.Delete(url))
             {
-                if (headers != null)
-                {
-                    foreach (var header in headers)
-                    {
-                        request.SetRequestHeader(header.Key, header.Value);
-                    }
-                }
-
-                var res = request.SendWebRequest();
-                while (!res.isDone)
-                {
-                    await Task.Yield();
-                }
-
-                bool isSuccess = IsResponseSuccessful(request);
-                string responseData = request.downloadHandler != null ? request.downloadHandler.text : null;
-                string error = isSuccess ? null : request.error;
-
-                return new WebRequestResponse(responseData, error, isSuccess);
+                return await SendRequest(request, headers);
             }
         }
 
