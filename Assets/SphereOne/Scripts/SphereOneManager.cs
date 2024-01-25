@@ -39,9 +39,7 @@ namespace SphereOne
         static extern void RequestCredentialFromSlideout();
 
         [DllImport("__Internal")]
-        static extern void OpenAddPinCodePopup(string url);
-        [DllImport("__Internal")]
-        static extern void OpenPinCodePopup(string url);
+        static extern void OpenPinCodePopup(string title, string url);
 #endif
 
         public static SphereOneManager Instance { get; set; }
@@ -386,8 +384,9 @@ namespace SphereOne
             if (!IsAuthenticated) return;
             var accessToken = _credentials.access_token;
 #if UNITY_WEBGL
+            var title = "Add Pin Code";
             var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}&redirectUrl={_redirectUrl}";
-            OpenAddPinCodePopup(url);
+            OpenPinCodePopup(title, url);
 #elif UNITY_ANDROID
             var url = $"{PIN_CODE_URL}/add?accessToken={accessToken}&platform=android&redirectUrl={_redirectUrl}";
             AndroidChromeCustomTab.LaunchUrl(url);
@@ -433,8 +432,9 @@ namespace SphereOne
             if (!IsAuthenticated) return;
             var accessToken = _credentials.access_token;
 #if UNITY_WEBGL
+            var title = "SphereOne Pin Code";
             var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&target={target}";
-            OpenPinCodePopup(url);
+            OpenPinCodePopup(title, url);
 #elif UNITY_ANDROID
             var url = $"{PIN_CODE_URL}/?accessToken={accessToken}&target={target}&platform=android&redirectUrl={_redirectUrl}";
             AndroidChromeCustomTab.LaunchUrl(url);
