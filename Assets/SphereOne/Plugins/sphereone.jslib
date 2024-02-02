@@ -52,6 +52,20 @@ var plugin = {
   RequestCredentialFromSlideout: function () {
     window.bridge.requestCredentialFromSlideout();
   },
+
+  OpenPinCodePopup: function(title, url) {
+    const width = 450;
+    const height = 350;
+    const left = (window.innerWidth - width) / 2 + window.screenX;
+    const top = (window.innerHeight - height) / 2 + window.screenY;
+    const options = `width=${width},height=${height},top=${top},left=${left}`;
+
+    const popup = window.open(
+      UTF8ToString(url),
+      title,
+      options
+    );
+  },
 };
 
 mergeInto(LibraryManager.library, plugin);
